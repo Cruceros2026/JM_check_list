@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JM Passengers — Draft v3 (real data upload)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --navy:#0f2d4e; --navy2:#0d3d5e; --teal:#1a7a8a; --teal-dark:#155f6d;
+    --celeste:#4ec9e1; --bg:#f4f7fa; --card:#ffffff; --border:#dfe6ec;
+    --text:#1a2a3a; --gray:#6b7684; --green:#1e8e5a; --amber:#b8860b; --red:#c0392b;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  .app{max-width:980px;margin:0 auto;min-height:100vh;background:var(--bg);}
+
+  .topbar{background:linear-gradient(175deg,#0f2d4e 0%,#0d3d5e 60%,#0a3d4a 100%);color:#fff;padding:16px 20px 14px;}
+  .topbar-row{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;}
+  .topbar-title{display:flex;align-items:center;gap:10px;}
+  .topbar-title h1{font-size:17px;margin:0;font-weight:700;}
+  .badge-draft{background:var(--celeste);color:#fff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;}
+  .topbar-sub{font-size:12px;color:#b9c9d6;margin-top:3px;}
+  .topbar-data{display:flex;gap:22px;flex-wrap:wrap;}
+  .topbar-col{text-align:right;}
+  .topbar-col .lbl{font-size:9.5px;color:#8fa8ba;text-transform:uppercase;letter-spacing:.05em;}
+  .topbar-col .val{font-size:12px;color:#e7f0f5;font-weight:600;line-height:1.5;}
+
+  .tabs{display:flex;gap:2px;background:#0a2338;padding:0 14px;overflow-x:auto;}
+  .tab{padding:11px 14px;font-size:12.5px;font-weight:600;color:#9fb2c2;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;}
+  .tab.active{color:#fff;border-bottom:3px solid var(--celeste);}
+  .tab:hover{color:#fff;}
+
+  .screen{display:none;padding:18px 20px 40px;}
+  .screen.active{display:block;}
+
+  h2.section-title{font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--navy);margin:0 0 4px;border-bottom:2px solid var(--navy);padding-bottom:8px;}
+  .hint{font-size:12px;color:var(--gray);margin:6px 0 16px;line-height:1.5;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .source-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;}
+  .source-icon{width:38px;height:38px;border-radius:9px;background:#eaf3ff;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  .source-name{font-size:13px;font-weight:700;color:var(--navy);}
+  .source-desc{font-size:11px;color:var(--gray);margin-top:2px;}
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;margin-top:6px;}
+  .chip-ok{background:#e3f6ec;color:var(--green);}
+  .chip-pending{background:#f1f3f5;color:var(--gray);}
+
+  .btn{background:var(--teal);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;}
+  .btn:hover{background:var(--teal-dark);}
+  .btn-ghost{background:#fff;color:var(--teal);border:1.5px solid var(--teal);}
+  .btn-sm{padding:6px 12px;font-size:11.5px;border-radius:7px;}
+  .btn-block{width:100%;text-align:center;}
+
+  .info-box{background:#eaf3ff;border:1px solid #cfe4fb;color:#1a5fa8;font-size:12px;border-radius:10px;padding:11px 13px;margin:14px 0;line-height:1.5;}
+  .warn-box{background:#fdf1d9;border:1px solid #f3dfa8;color:#8a6512;font-size:12px;border-radius:10px;padding:11px 13px;margin:0 0 16px;line-height:1.5;}
+
+  /* ---- cover screen ---- */
+  .setup-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+  .field-label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 5px;}
+  .field-label:first-child{margin-top:0;}
+  .select-full,.input-full,.textarea-full{width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12.5px;font-family:inherit;}
+  .textarea-full{resize:vertical;min-height:56px;}
+  .voyage-row{display:flex;gap:8px;align-items:flex-end;}
+  .voyage-row .input-full{flex:1;}
+  .lookup-result{margin-top:12px;padding:12px 14px;background:#f0f6fb;border-radius:9px;display:none;}
+  .lookup-result.show{display:block;}
+  .lookup-result .ship{font-size:15px;font-weight:800;color:var(--navy);}
+  .lookup-result .date{font-size:12px;color:var(--gray);margin-top:2px;}
+
+  .day-chips{display:flex;gap:7px;flex-wrap:wrap;}
+  .dchip{font-size:12px;font-weight:700;padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);color:var(--gray);cursor:pointer;background:#fff;}
+  .dchip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .day-panel{background:#f7f9fb;border-radius:10px;padding:14px 16px;margin-top:12px;font-size:12.5px;line-height:1.6;color:#334;}
+  .day-panel b{color:var(--navy);}
+
+  /* ---- pax directory (same as before, condensed) ---- */
+  .search-row{display:flex;gap:8px;margin-bottom:12px;}
+  .search-input{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;}
+  .filter-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+  .fchip{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);color:var(--gray);cursor:pointer;background:#fff;}
+  .fchip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .pax-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:9px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .pax-card:hover{border-color:var(--teal);}
+  .pax-name{font-size:13.5px;font-weight:700;color:var(--navy);}
+  .pax-meta{font-size:11.5px;color:var(--gray);margin-top:3px;}
+  .pax-tags{display:flex;gap:5px;flex-shrink:0;}
+  .tag{font-size:9.5px;font-weight:800;padding:3px 7px;border-radius:6px;}
+  .tag-vip{background:#fdf1d9;color:var(--amber);}
+  .tag-diet{background:#eafaf1;color:var(--green);}
+  .tag-hotel1{background:#eaf3ff;color:#1a5fa8;}
+  .tag-hotel2{background:#fdeef1;color:#a83258;}
+  .tag-status-red{background:#fdeaea;color:var(--red);}
+  .tag-status-amber{background:#fdf1d9;color:var(--amber);}
+  .tag-status-gray{background:#eef0f2;color:var(--gray);}
+  .pax-alert{width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+  .overlay{display:none;position:fixed;inset:0;background:rgba(10,20,35,.55);align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .overlay.active{display:flex;}
+  .modal{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:22px;max-height:85vh;overflow:auto;}
+  .modal h3{margin:0 0 2px;color:var(--navy);font-size:16px;}
+  .modal .pax-meta{margin-bottom:14px;}
+  .detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f4;font-size:12.5px;}
+  .detail-row span:first-child{color:var(--gray);}
+  .detail-row span:last-child{font-weight:600;text-align:right;}
+  .modal-close{float:right;background:none;border:none;font-size:18px;color:var(--gray);cursor:pointer;}
+  .incident-entry{background:#f7f9fb;border-radius:9px;padding:10px 12px;margin-bottom:8px;}
+  .incident-entry .itype{font-size:11px;font-weight:800;color:var(--navy);}
+  .incident-entry .itime{font-size:10.5px;color:var(--gray);float:right;}
+  .incident-entry .idesc{font-size:12px;margin-top:4px;line-height:1.4;}
+  .protocol-box{background:#fdeaea;border-left:4px solid var(--red);border-radius:8px;padding:10px 12px;margin-top:10px;}
+  .protocol-box .ptitle{font-size:11px;font-weight:800;color:var(--red);margin-bottom:6px;}
+  .protocol-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 0;}
+  .protocol-item input{accent-color:var(--red);}
+  .empty-note{font-size:11.5px;color:var(--gray);font-style:italic;}
+  .quick-flags{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px;}
+  .quick-flag{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;cursor:pointer;}
+  .quick-flag input{width:16px;height:16px;accent-color:var(--teal);}
+  .tag-wheelchair{background:#eaf3ff;color:#1a5fa8;}
+  .tag-nobp{background:#fdeaea;color:var(--red);}
+
+  /* ---- upload / mapping modal ---- */
+  .source-card{cursor:pointer;transition:border-color .15s;}
+  .source-card:hover{border-color:var(--teal);}
+  .source-card input[type=file]{display:none;}
+  .map-modal{background:#fff;border-radius:14px;max-width:520px;width:100%;padding:22px;max-height:88vh;overflow:auto;}
+  .map-modal h3{margin:0 0 6px;color:var(--navy);font-size:15px;}
+  .map-info{font-size:12px;color:var(--gray);margin-bottom:14px;}
+  .map-field-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f0f2f4;}
+  .map-field-row label{font-size:12.5px;font-weight:600;flex:1;}
+  .map-field-row select{padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;max-width:220px;}
+  .map-preview{margin-top:12px;font-size:11px;background:#f7fafb;border-radius:8px;padding:10px 12px;line-height:1.6;display:none;color:#334;}
+  .map-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .discrepancy-box{background:#fdf1d9;border:1px solid #f3dfa8;color:#8a6512;font-size:12px;border-radius:10px;padding:11px 13px;margin:10px 0;line-height:1.5;}
+  .pdf-modal{background:#fff;border-radius:14px;max-width:640px;width:100%;padding:22px;max-height:88vh;overflow:auto;}
+  .pdf-modal h3{margin:0 0 6px;color:var(--navy);font-size:15px;}
+  .pdf-raw-box{background:#f7fafb;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11px;color:#556;max-height:130px;overflow:auto;white-space:pre-wrap;margin-bottom:14px;font-family:monospace;}
+  .pdf-edit-textarea{width:100%;min-height:160px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12.5px;font-family:monospace;resize:vertical;}
+
+  /* ---- login / standard Silversea cover screen (ILS Tours) ---- */
+  #login-screen{min-height:100vh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(175deg,#0f2d4e 0%,#0d3d5e 50%,#0a3d4a 100%);}
+  .login-waves{position:absolute;left:0;right:0;bottom:0;width:100%;height:55%;z-index:0;pointer-events:none;line-height:0;}
+  .login-waves svg{width:100%;height:100%;display:block;}
+  .login-card{position:relative;z-index:1;background:rgba(255,255,255,0.97);border:none;border-radius:20px;padding:36px 30px 32px;width:100%;max-width:400px;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.35);}
+  .login-logo-img{height:42px;margin-bottom:22px;}
+  .login-title-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;}
+  .login-title{font-size:22px;font-weight:700;color:#132743;margin:0;}
+  .login-version-badge{background:#4ec9e1;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.02em;}
+  .login-sub{font-size:11.5px;letter-spacing:0.06em;color:#8b93a1;font-weight:700;text-transform:uppercase;margin-bottom:22px;}
+  .login-info-box{background:#eaf3ff;border:1px solid #cfe4fb;color:#1a5fa8;font-size:12.5px;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left;line-height:1.5;}
+  .login-input{width:100%;padding:12px 14px;border:1px solid #e3e5ea;border-radius:10px;background:#fafbfc;color:#1a1917;font-size:15px;margin-bottom:12px;}
+  .login-input::placeholder{color:#a9afb9;}
+  .login-input-id{background:#f4fafc;border:1px solid #c8dfe8;text-transform:uppercase;letter-spacing:2px;font-weight:700;text-align:center;color:#1a2a3a;}
+  .login-input-id::placeholder{text-transform:none;letter-spacing:normal;font-weight:400;color:#a9afb9;}
+  .login-btn{width:100%;padding:13px;background:#1a7a8a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;}
+  .login-btn:hover{background:#155f6d;}
+  .login-error{color:#c0392b;font-size:12px;margin:-4px 0 12px;text-align:left;display:none;}
+  .login-field-label{font-size:11px;font-weight:700;color:#8b93a1;text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px;text-align:left;}
+  .login-select{width:100%;padding:12px 14px;border:1px solid #e3e5ea;border-radius:10px;background:#fafbfc;color:#1a1917;font-size:15px;margin-bottom:12px;font-family:inherit;}
+  .plane-chips{display:flex;gap:8px;margin-bottom:14px;}
+  .plane-chip{flex:1;padding:10px 6px;border-radius:10px;border:1.5px solid #e3e5ea;background:#fafbfc;color:#5a6472;font-size:12.5px;font-weight:700;text-align:center;cursor:pointer;}
+  .plane-chip.active{background:#1a7a8a;border-color:#1a7a8a;color:#fff;}
+
+  /* ---- embarkation/disembarkation checklist ---- */
+  .flow-toggle{display:flex;gap:8px;margin-bottom:16px;}
+  .flow-btn{flex:1;padding:12px;border-radius:11px;border:2px solid var(--border);background:#fff;font-size:13px;font-weight:800;color:var(--gray);cursor:pointer;text-align:center;}
+  .flow-btn.active{border-color:var(--navy);background:var(--navy);color:#fff;}
+  .flow-btn .sub{display:block;font-size:10.5px;font-weight:600;margin-top:2px;opacity:.75;}
+
+  .stage-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px;}
+  .stage-pill{flex-shrink:0;font-size:11px;font-weight:700;padding:7px 12px;border-radius:20px;background:#fff;border:1.5px solid var(--border);color:var(--gray);cursor:pointer;white-space:nowrap;}
+  .stage-pill.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+  .context-bar{background:linear-gradient(135deg,#0f2d4e,#134a63);color:#fff;border-radius:12px;padding:14px 16px;margin-bottom:16px;}
+  .context-bar .big{font-size:18px;font-weight:800;}
+  .context-bar .lbl{font-size:10.5px;color:#a9c2d3;text-transform:uppercase;letter-spacing:.05em;}
+  .standby-badge{display:inline-block;background:var(--amber);color:#fff;font-size:10px;font-weight:800;padding:3px 9px;border-radius:6px;margin-top:6px;}
+  .stage-note{font-size:11.5px;color:#dce9f0;margin-top:6px;font-style:italic;}
+
+  .field-row{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;}
+  .field-row-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .field-row label{font-size:12.5px;font-weight:600;flex:1;line-height:1.4;}
+  .field-input{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  .field-input input[type=time],.field-input input[type=number]{width:92px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12.5px;}
+  .field-input input[type=text]{width:180px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12.5px;}
+  .field-input select{padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12.5px;}
+  .field-input input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal);}
+  .photo-btn{background:#eaf3ff;color:#1a5fa8;border:1.5px dashed #a9cdf0;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+  .photo-btn.has-photo{background:#e3f6ec;color:var(--green);border-style:solid;border-color:#8fd6b0;}
+  .photo-input{display:none;}
+  .count-input{width:55px !important;text-align:center;}
+  .count-text{width:200px !important;}
+  .field-section{font-size:11.5px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border);}
+  .field-section:first-child{margin-top:0;}
+  .cmt-btn{background:none;border:none;font-size:14px;cursor:pointer;color:var(--gray);opacity:.6;}
+  .cmt-btn:hover{opacity:1;}
+  .cmt-btn.has-text{opacity:1;color:var(--teal);}
+  .cmt-box{display:none;margin-top:8px;}
+  .cmt-box.show{display:block;}
+  .cmt-box textarea{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;min-height:44px;font-family:inherit;}
+
+  @media (max-width:640px){
+    .grid2{grid-template-columns:1fr;}
+    .topbar-meta{display:none;}
+    .field-row-top{flex-direction:column;align-items:flex-start;}
+    .field-input input[type=text]{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div id="login-screen">
+  <div class="login-waves">
+    <svg viewBox="0 0 1440 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <path d="M0,280 L60,266 C120,253,240,226,360,222 C480,218,600,238,720,250 C840,262,960,266,1080,256 C1200,246,1320,222,1380,210 L1440,198 L1440,400 L1380,400 C1320,400,1200,400,1080,400 C960,400,840,400,720,400 C600,400,480,400,360,400 C240,400,120,400,60,400 L0,400 Z" fill="#0a3d5c" opacity="1"/>
+      <path d="M0,310 L60,300 C120,290,240,270,360,268 C480,266,600,282,720,292 C840,302,960,306,1080,298 C1200,290,1320,270,1380,260 L1440,250 L1440,400 L1380,400 C1320,400,1200,400,1080,400 C960,400,840,400,720,400 C600,400,480,400,360,400 C240,400,120,400,60,400 L0,400 Z" fill="#0e6674" opacity="0.85"/>
+      <path d="M0,340 L60,334 C120,328,240,316,360,316 C480,316,600,328,720,334 C840,340,960,342,1080,336 C1200,330,1320,316,1380,309 L1440,302 L1440,400 L1380,400 C1320,400,1200,400,1080,400 C960,400,840,400,720,400 C600,400,480,400,360,400 C240,400,120,400,60,400 L0,400 Z" fill="#1a8a6a" opacity="0.7"/>
+    </svg>
+  </div>
+  <div class="login-card">
+    <img class="login-logo-img" src="data:image/png;base64,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" alt="ILS Tours" />
+    <div class="login-title-row">
+      <div class="login-title">JM Passengers</div>
+      <span class="login-version-badge">draft v3</span>
+    </div>
+    <div class="login-sub">Journey Manager · Live-data guide</div>
+    <div class="login-info-box">To operate you will need to upload the Master Hospitality Sheet, the Transfer Manifest, the Hotel Manifest, and the operation's Turnaround Profile (these can be uploaded after logging in).</div>
+    <div class="login-error" id="loginError">Enter the operation ID and your name to continue.</div>
+    <input class="login-input login-input-id" id="op-id-input" type="text" placeholder="Operation ID (e.g. E4260118015)" />
+
+    <div class="login-field-label">Your role</div>
+    <div class="plane-chips" id="roleChips">
+      <div class="plane-chip" data-role="ejecutivo" onclick="selectRole('ejecutivo')">Executive</div>
+      <div class="plane-chip" data-role="jm" onclick="selectRole('jm')">Journey Manager</div>
+    </div>
+
+    <div class="login-field-label">Your name</div>
+    <select class="login-select" id="staff-name-select" onchange="toggleCustomName('staff', this.value)">
+      <option value="">— Select your name —</option>
+      <option>Karen Kohnenkampf</option>
+      <option>Sebastián Vargas</option>
+      <option>Alejandra Gómez</option>
+      <option>Belén Mary</option>
+      <option>Milton Padilla</option>
+      <option>Patricia Maturana</option>
+      <option value="__other__">Other (type name)</option>
+    </select>
+    <input class="login-input" id="staff-name-input" type="text" placeholder="First and last name" style="display:none;" />
+
+    <div id="staffPlaneBlock" style="display:none;">
+      <div class="login-field-label">Your assigned plane</div>
+      <div class="plane-chips" id="staffPlaneChips">
+        <div class="plane-chip" data-plane="1" onclick="selectPlane('staff',1)">Plane 1</div>
+        <div class="plane-chip" data-plane="2" onclick="selectPlane('staff',2)">Plane 2</div>
+        <div class="plane-chip" data-plane="3" onclick="selectPlane('staff',3)">Plane 3</div>
+      </div>
+    </div>
+    <button class="login-btn" onclick="login()">Log in to the operation →</button>
+  </div>
+</div>
+
+<div class="app" id="app" style="display:none;">
+
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="topbar-title">
+        <h1>JM Passengers</h1>
+        <span class="badge-draft">draft v3</span>
+      </div>
+      <div class="topbar-data" id="topbarMeta">
+        <div class="topbar-col"><div class="lbl">Voyage</div><div class="val">—</div></div>
+        <div class="topbar-col"><div class="lbl">Ship</div><div class="val">—</div></div>
+        <div class="topbar-col"><div class="lbl">JM Team</div><div class="val">—</div></div>
+      </div>
+    </div>
+    <div class="topbar-sub">Journey Manager guide — live data</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-screen="portada">1 · Cover</div>
+    <div class="tab" data-screen="infoviaje">2 · Trip Info</div>
+    <div class="tab" data-screen="directorio">3 · Passengers</div>
+    <div class="tab" data-screen="checklist">4 · Checklist</div>
+    <div class="tab" data-screen="export">5 · Download</div>
+  </div>
+
+  <!-- ============ SCREEN 1: PORTADA ============ -->
+  <div class="screen active" id="screen-portada">
+    <h2 class="section-title">Operation Details</h2>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Operation</div>
+      <p class="hint" style="margin-top:0;">Operation ID: <b id="summaryVoyage">—</b> · You logged in as <b id="summaryJm1">—</b>. To correct your role/name/plane, reload the page and log in again.</p>
+
+      <div class="field-label">Ship</div>
+      <select class="select-full" id="ship-name-select" onchange="toggleCustomName('ship', this.value); onOperationDetailChange();" style="margin-bottom:8px;">
+        <option value="">— Select the ship —</option>
+        <option>Silver Cloud</option>
+        <option>Silver Wind</option>
+        <option>Silver Endeavour</option>
+        <option>Silver Explorer</option>
+        <option value="__other__">Other (type in)</option>
+      </select>
+      <input class="input-full" id="ship-name-input" placeholder="Ship name" style="display:none;margin-bottom:8px;">
+
+      <div class="field-label">Operation date (embarkation)</div>
+      <input class="input-full" type="date" id="op-date-input" onchange="onOperationDetailChange()">
+
+      <div class="lookup-result show" id="lookupResult" style="margin-top:14px;">
+        <div class="ship" id="lookupShip">—</div>
+        <div class="date" id="lookupDate">Select ship and date above</div>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Journey Manager Team</div>
+      <p class="hint" style="margin-top:0;" id="teamHint">Fill in the other 2 Journey Managers for the operation.</p>
+
+      <div id="jm1Block" style="display:none;">
+        <div class="field-label">Journey Manager 1</div>
+        <select class="select-full" id="jm1-name-select" onchange="toggleCustomName('jm1', this.value)" style="margin-bottom:8px;">
+          <option value="">— Select name —</option>
+          <option>Karen Kohnenkampf</option>
+          <option>Sebastián Vargas</option>
+          <option>Alejandra Gómez</option>
+          <option>Belén Mary</option>
+          <option>Milton Padilla</option>
+          <option>Patricia Maturana</option>
+          <option value="__other__">Other (type name)</option>
+        </select>
+        <input class="input-full" id="jm1-name-input" placeholder="First and last name" style="display:none;margin-bottom:8px;">
+        <div class="plane-chips" id="jm1PlaneChips">
+          <div class="plane-chip" data-plane="1" onclick="selectPlane('jm1',1)">Plane 1</div>
+          <div class="plane-chip" data-plane="2" onclick="selectPlane('jm1',2)">Plane 2</div>
+          <div class="plane-chip" data-plane="3" onclick="selectPlane('jm1',3)">Plane 3</div>
+        </div>
+      </div>
+
+      <div class="field-label">Journey Manager 2</div>
+      <select class="select-full" id="jm2-name-select" onchange="toggleCustomName('jm2', this.value)" style="margin-bottom:8px;">
+        <option value="">— Select name —</option>
+        <option>Karen Kohnenkampf</option>
+        <option>Sebastián Vargas</option>
+        <option>Alejandra Gómez</option>
+        <option>Belén Mary</option>
+        <option>Milton Padilla</option>
+        <option>Patricia Maturana</option>
+        <option value="__other__">Other (type name)</option>
+      </select>
+      <input class="input-full" id="jm2-name-input" placeholder="First and last name" style="display:none;margin-bottom:8px;">
+      <div class="plane-chips" id="jm2PlaneChips">
+        <div class="plane-chip" data-plane="1" onclick="selectPlane('jm2',1)">Plane 1</div>
+        <div class="plane-chip" data-plane="2" onclick="selectPlane('jm2',2)">Plane 2</div>
+        <div class="plane-chip" data-plane="3" onclick="selectPlane('jm2',3)">Plane 3</div>
+      </div>
+
+      <div class="field-label">Journey Manager 3</div>
+      <select class="select-full" id="jm3-name-select" onchange="toggleCustomName('jm3', this.value)" style="margin-bottom:8px;">
+        <option value="">— Select name —</option>
+        <option>Karen Kohnenkampf</option>
+        <option>Sebastián Vargas</option>
+        <option>Alejandra Gómez</option>
+        <option>Belén Mary</option>
+        <option>Milton Padilla</option>
+        <option>Patricia Maturana</option>
+        <option value="__other__">Other (type name)</option>
+      </select>
+      <input class="input-full" id="jm3-name-input" placeholder="First and last name" style="display:none;margin-bottom:8px;">
+      <div class="plane-chips" id="jm3PlaneChips">
+        <div class="plane-chip" data-plane="1" onclick="selectPlane('jm3',1)">Plane 1</div>
+        <div class="plane-chip" data-plane="2" onclick="selectPlane('jm3',2)">Plane 2</div>
+        <div class="plane-chip" data-plane="3" onclick="selectPlane('jm3',3)">Plane 3</div>
+      </div>
+      <div class="hint" id="planeWarning" style="display:none;color:#c0392b;"></div>
+    </div>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Day to review (check-in / Meet & Greet)</div>
+      <p class="hint" style="margin-top:0;">Depending on the operation, arrival in Santiago can be Day -1, -2, or -3 before embarkation, plus Embarkation Day itself. Choose a day to see that day's info.</p>
+      <div class="day-chips">
+        <div class="dchip" data-day="-3">Day -3</div>
+        <div class="dchip" data-day="-2">Day -2</div>
+        <div class="dchip" data-day="-1">Day -1</div>
+        <div class="dchip active" data-day="emb">Embarkation Day</div>
+      </div>
+      <div class="day-panel" id="dayPanel"></div>
+    </div>
+
+    <h2 class="section-title" style="margin-top:22px;">Data Sources</h2>
+    <p class="hint">Click each card to upload the actual file (Excel or CSV). These are uploaded once per operation — uploaded by the <b>Executive</b>. All 3 Journey Managers would see the same synced information (in this test build it stays only in your browser).</p>
+
+    <div class="grid2">
+      <div class="source-card" onclick="document.getElementById('fileHosp').click()">
+        <div class="source-icon">📋</div>
+        <div>
+          <div class="source-name">Master Hospitality Sheet</div>
+          <div class="source-desc">Booking, name, cabin, bus, flight, notes</div>
+          <span class="chip chip-pending" id="chipHosp">Not uploaded — click to upload</span>
+        </div>
+        <input type="file" id="fileHosp" accept=".xlsx,.xls,.csv">
+      </div>
+      <div class="source-card" onclick="document.getElementById('fileTransfer').click()">
+        <div class="source-icon">🚐</div>
+        <div>
+          <div class="source-name">Transfer Manifest</div>
+          <div class="source-desc">Passenger arrivals by day</div>
+          <span class="chip chip-pending" id="chipTransfer">Not uploaded — click to upload</span>
+        </div>
+        <input type="file" id="fileTransfer" accept=".xlsx,.xls,.csv">
+      </div>
+      <div class="source-card" onclick="document.getElementById('fileHotel').click()">
+        <div class="source-icon">🏨</div>
+        <div>
+          <div class="source-name">Hotel Manifest</div>
+          <div class="source-desc">Hotel assigned per passenger</div>
+          <span class="chip chip-pending" id="chipHotel">Not uploaded — click to upload</span>
+        </div>
+        <input type="file" id="fileHotel" accept=".xlsx,.xls,.csv">
+      </div>
+      <div class="source-card" onclick="document.getElementById('fileTurnaround').click()">
+        <div class="source-icon">🛫</div>
+        <div>
+          <div class="source-name">Turnaround Profile</div>
+          <div class="source-desc">Flights and scheduled times (PDF or Excel)</div>
+          <span class="chip chip-pending" id="chipTurnaround">Not uploaded — click to upload</span>
+        </div>
+        <input type="file" id="fileTurnaround" accept=".pdf,.xlsx,.xls,.csv">
+      </div>
+    </div>
+
+    <div class="info-box">
+      The 4 files are cross-matched by <b>Booking Code</b> (backup by name) to build a single record per passenger.
+    </div>
+    <div class="discrepancy-box" id="discrepancyBox" style="display:none;"></div>
+    <div id="turnaroundPreview"></div>
+  </div>
+
+  <!-- ============ SCREEN INFO DEL VIAJE ============ -->
+  <div class="screen" id="screen-infoviaje">
+    <h2 class="section-title">Trip Information</h2>
+    <p class="hint">Reference data for the operation — entered once and available to consult throughout the trip. It is not part of the checklist, it is context.</p>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Hotels</div>
+      <p class="hint" style="margin-top:0;" id="hotelAutoHint">There may be passengers in 2 different hotels. These fill in automatically when you upload the Hotel Manifest — or choose them here.</p>
+      <div class="field-label">Hotel 1</div>
+      <select class="select-full" id="hotel1-name-select" onchange="toggleCustomName('hotel1', this.value)" style="margin-bottom:8px;">
+        <option value="">— Select the hotel —</option>
+        <option>Mandarin Oriental</option>
+        <option>Ritz-Carlton</option>
+        <option>Hilton Garden Inn</option>
+        <option value="__other__">Otro (escribir)</option>
+      </select>
+      <input class="input-full" id="hotel1-name-input" placeholder="Hotel name" style="display:none;margin-bottom:8px;">
+      <div class="field-label">Hotel 2 (optional, if there are passengers in a second hotel)</div>
+      <select class="select-full" id="hotel2-name-select" onchange="toggleCustomName('hotel2', this.value)" style="margin-bottom:8px;">
+        <option value="">— Select the hotel —</option>
+        <option>Mandarin Oriental</option>
+        <option>Ritz-Carlton</option>
+        <option>Hilton Garden Inn</option>
+        <option value="__other__">Otro (escribir)</option>
+      </select>
+      <input class="input-full" id="hotel2-name-input" placeholder="Name of the second hotel (if applicable)" style="display:none;">
+    </div>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Hospitality Desk</div>
+      <div class="grid2">
+        <div>
+          <div class="field-label">Room / location — Day -2</div>
+          <input class="input-full" id="infoSalonD2" placeholder="Room name, floor">
+          <div class="field-label">Schedule — Day -2</div>
+          <input class="input-full" id="infoHorarioD2" placeholder="08:00 – 12:00">
+        </div>
+        <div>
+          <div class="field-label">Room / location — Day -1</div>
+          <input class="input-full" id="infoSalonD1" placeholder="Room name, floor">
+          <div class="field-label">Schedule — Day -1</div>
+          <input class="input-full" id="infoHorarioD1" placeholder="08:00 – 12:00">
+        </div>
+      </div>
+      <div class="field-label">Comments</div>
+      <textarea class="textarea-full" id="infoSalonUbicacion" placeholder="Notes about the room, last-minute changes…"></textarea>
+    </div>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Hotel Services</div>
+      <div class="grid2">
+        <div>
+          <div class="field-label">Check-in Location</div>
+          <input class="input-full" id="infoCheckin" placeholder="Lobby / Room X">
+        </div>
+        <div>
+          <div class="field-label">Waiting Area</div>
+          <input class="input-full" id="infoWaitingArea" placeholder="Waiting area">
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <div class="field-label">Breakfast Location (Day -1)</div>
+          <input class="input-full" id="infoDesayunoLugar" placeholder="Restaurant / floor">
+        </div>
+        <div>
+          <div class="field-label">Breakfast Schedule</div>
+          <input class="input-full" id="infoDesayunoHorario" placeholder="07:00 – 10:30">
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Pull Out and Luggage</div>
+      <div class="grid2">
+        <div>
+          <div class="field-label">Pull Out Time</div>
+          <input class="input-full" id="infoPullOutHora" placeholder="07:30">
+        </div>
+        <div>
+          <div class="field-label">Room where luggage is stored</div>
+          <input class="input-full" id="infoPullOutSalon" placeholder="Room X / Lobby">
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Buses</div>
+      <p class="hint" style="margin-top:0;">Where they leave from and at what time.</p>
+      <div class="field-label">Bus Departure Location</div>
+      <input class="input-full" id="infoBusLugarSalida" placeholder="Hotel lobby / main entrance…" style="margin-bottom:10px;">
+      <table class="log-table" id="busInfoTable">
+        <thead><tr><th>Bus</th><th>Departure Time</th><th>N° pax (from directory)</th></tr></thead>
+        <tbody id="busInfoBody"></tbody>
+      </table>
+    </div>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Flights</div>
+      <table class="log-table" id="flightInfoTable">
+        <thead><tr><th>Flight</th><th>Departure Time</th><th>Flight Time</th><th>N° pax (from directory)</th></tr></thead>
+        <tbody id="flightInfoBody"></tbody>
+      </table>
+      <p class="hint" id="flightInfoEmpty" style="display:none;">Upload the Master Hospitality Sheet to see detected flights here.</p>
+    </div>
+
+    <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Languages and Special Groups</div>
+      <div class="field-label">Chinese translator?</div>
+      <div class="plane-chips" id="chineseTranslatorChips" style="max-width:280px;">
+        <div class="plane-chip" data-val="si" onclick="setChineseTranslator('si')">Yes</div>
+        <div class="plane-chip" data-val="no" onclick="setChineseTranslator('no')">No</div>
+      </div>
+      <div class="field-label">Who? (if applicable)</div>
+      <input class="input-full" id="infoTraductorQuien" placeholder="Translator's name">
+      <div class="field-label">Special groups</div>
+      <input class="input-full" id="infoGruposEspeciales" placeholder="Name / characteristics of the group">
+      <div class="field-label">VIP Notes (names and cabins)</div>
+      <textarea class="textarea-full" id="infoNotasVip" placeholder="Names and cabin numbers of VIPs…"></textarea>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 2: DIRECTORIO ============ -->
+  <div class="screen" id="screen-directorio">
+    <h2 class="section-title">Passenger Directory</h2>
+    <p class="hint" id="paxCountHint">6 sample passengers (upload the Master Hospitality Sheet to replace with real data)</p>
+
+    <div class="field-label">Day to review</div>
+    <div class="day-chips" id="dayChipsPax" style="margin-bottom:12px;">
+      <div class="dchip" data-day="-3">Day -3</div>
+      <div class="dchip" data-day="-2">Day -2</div>
+      <div class="dchip" data-day="-1">Day -1</div>
+      <div class="dchip active" data-day="emb">Embarkation Day</div>
+    </div>
+    <div class="warn-box" id="dayFilterBanner" style="display:none;"></div>
+
+    <div class="search-row">
+      <input class="search-input" placeholder="Search by name, booking, or cabin…" id="paxSearch">
+      <button class="btn btn-ghost btn-sm" id="addPaxBtn" style="white-space:nowrap;">+ Add passenger</button>
+    </div>
+    <div class="filter-chips" id="filterChips"></div>
+
+    <div id="paxList"></div>
+
+    <div class="setup-card" id="addPaxForm" style="display:none;margin-top:14px;">
+      <h3 style="margin:0 0 4px;font-size:14px;color:var(--navy);">Add passenger manually</h3>
+      <p class="hint" style="margin-top:0;">For cases not included in any of the 4 manifests.</p>
+      <div class="field-label">Name</div>
+      <input class="input-full" id="newPaxName" placeholder="First and last name">
+      <div class="field-label">Flight</div>
+      <input class="input-full" id="newPaxFlight" value="DAP 820">
+      <div class="field-label">Reason / notes</div>
+      <textarea class="textarea-full" id="newPaxNote" placeholder="E.g. replaces a cancelled passenger…"></textarea>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn btn-sm" id="savePaxBtn">Save passenger</button>
+        <button class="btn btn-ghost btn-sm" id="cancelPaxBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 3: CHECKLIST ============ -->
+  <div class="screen" id="screen-checklist">
+    <h2 class="section-title">Checklist</h2>
+
+    <div class="field-label">Day to review</div>
+    <div class="day-chips" id="dayChipsChecklist" style="margin-bottom:16px;">
+      <div class="dchip" data-day="-3">Day -3</div>
+      <div class="dchip" data-day="-2">Day -2</div>
+      <div class="dchip" data-day="-1">Day -1</div>
+      <div class="dchip active" data-day="emb">Embarkation Day</div>
+    </div>
+
+    <div class="flow-toggle">
+      <div class="flow-btn active" id="btnEmbarque" data-flow="emb">Embarkation Checklist<span class="sub">SCL → PWI → King George</span></div>
+      <div class="flow-btn" id="btnDesembarque" data-flow="des">Disembarkation Checklist<span class="sub">King George → PWI → SCL</span></div>
+    </div>
+
+    <div class="stage-strip" id="stageStrip"></div>
+
+    <div class="context-bar">
+      <div class="lbl" id="ctxStageTag">Embarkation day</div>
+      <div class="big" id="ctxStageTitle">Bus Transfer and FBO</div>
+      <div id="ctxNote"></div>
+    </div>
+
+    <div id="fieldsContainer"></div>
+
+    <div class="setup-card" style="margin-top:18px;">
+      <h3 style="margin:0 0 4px;font-size:13px;color:var(--navy);text-transform:uppercase;letter-spacing:.03em;">General trip comments</h3>
+      <p class="hint" style="margin-top:0;">Overall notes for the whole checklist, not for a specific item.</p>
+      <textarea class="textarea-full" id="cmtGeneralEmb" placeholder="General Embarkation comments…" style="min-height:80px;"></textarea>
+      <textarea class="textarea-full" id="cmtGeneralDes" placeholder="General Disembarkation comments…" style="min-height:80px;display:none;"></textarea>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 4: EXPORTAR ============ -->
+  <div class="screen" id="screen-export">
+    <h2 class="section-title">Download Information</h2>
+    <p class="hint">Available at any point during the operation, not just at the end.</p>
+
+    <div class="setup-card">
+      <h3 style="margin:0 0 4px;font-size:14px;color:var(--navy);">📄 Word Report — Embarkation + Disembarkation</h3>
+      <p class="hint" style="margin-top:0;">Passenger roster + assigned hotel/bus + incident log. Same format as your other ILS/Silversea reports.</p>
+      <button class="btn" id="downloadWordBtn" onclick="downloadWordReport()">Download Word</button>
+    </div>
+    <div class="setup-card">
+      <h3 style="margin:0 0 4px;font-size:14px;color:var(--navy);">📊 Excel — Consolidated Data</h3>
+      <p class="hint" style="margin-top:0;">Master passenger record (all 4 sources cross-matched) + incident log, for archiving.</p>
+      <button class="btn btn-ghost" id="downloadExcelBtn" onclick="downloadExcelReport()">Download Excel</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ---- passenger detail modal ---- -->
+<div class="overlay" id="paxOverlay">
+  <div class="modal">
+    <button class="modal-close" id="closeModal">✕</button>
+    <h3 id="modalName">Amy Parker</h3>
+    <div class="pax-meta" id="modalMeta">Booking #A4471 · Suite 621</div>
+    <div class="detail-row"><span>Flight</span><span id="modalFlight">DAP 820</span></div>
+    <div class="detail-row"><span>Bus</span><span id="modalBus">—</span></div>
+    <div class="detail-row"><span>Hotel (SCL)</span><span id="modalHotel">Mandarin Oriental</span></div>
+    <div class="detail-row"><span>Program</span><span id="modalProgram">Antarctica Fly Cruise</span></div>
+    <div class="detail-row"><span>Visa Check</span><span style="color:#1e8e5a">✓ OK</span></div>
+
+    <div class="field-label">Quick flags</div>
+    <div class="quick-flags">
+      <label class="quick-flag"><input type="checkbox" id="flagVip"> ⭐ VIP</label>
+      <label class="quick-flag"><input type="checkbox" id="flagWheelchair"> ♿ Wheelchair</label>
+      <label class="quick-flag"><input type="checkbox" id="flagNoBp"> 🎫 No Boarding Pass</label>
+    </div>
+
+    <div class="field-label">Passenger status</div>
+    <select class="select-full" id="modalStatus">
+      <option value="manifiesto">On manifest (normal)</option>
+      <option value="no_llego">Did not arrive</option>
+      <option value="no_embarco">Did not board</option>
+      <option value="va_pwi_directo">Goes directly to PWI</option>
+      <option value="va_fbo_directo">Goes directly to FBO</option>
+      <option value="agregado_mano">Added manually</option>
+    </select>
+
+    <div class="field-label">Requirements, complaints, and incidents</div>
+    <div id="incidentHistory"></div>
+    <button class="btn btn-ghost btn-sm" id="toggleIncidentForm" style="margin-top:4px;">+ Log</button>
+
+    <div id="incidentForm" style="display:none;margin-top:10px;">
+      <div class="field-label">Type</div>
+      <select class="select-full" id="incidentType">
+        <option>Special requirement</option>
+        <option>Complaint</option>
+        <option>Change (cabin / hotel / transfer)</option>
+        <option>No Boarding Pass (collect at FBO)</option>
+        <option>Medical attention</option>
+        <option>Accident / Illness</option>
+        <option>Other</option>
+      </select>
+      <div class="info-box" id="noBpBox" style="display:none;margin:10px 0 0;">ℹ️ Hospitality handles delivering the Boarding Pass at the FBO — it is not the JM's task. Log the name anyway to keep track of it.</div>
+      <div class="field-label">Description</div>
+      <textarea class="textarea-full" id="incidentDesc" placeholder="What happened, what was done…"></textarea>
+
+      <div class="protocol-box" id="protocolBox" style="display:none;">
+        <div class="ptitle">⚠ Accident protocol — mandatory</div>
+        <div class="protocol-item"><input type="checkbox"><span>Passenger approached and assessed</span></div>
+        <div class="protocol-item"><input type="checkbox"><span>Medical assistance coordinated (DAP / airport infirmary)</span></div>
+        <div class="protocol-item"><input type="checkbox"><span>Ship officer notified (mandatory in all cases)</span></div>
+        <div class="protocol-item"><input type="checkbox"><span>Passenger refused assistance → Refusal of Consent signed</span></div>
+      </div>
+
+      <button class="btn btn-sm" id="saveIncidentBtn" style="margin-top:10px;">Save record</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= PASSENGER DATA ================= */
+let paxData = [
+  {name:"Amy Parker", booking:"A4471", cabin:"621", bus:"BUS 1", flight:"DAP 820", hotel:"Mandarin Oriental", vip:true, diet:true, program:"Fly Cruise", status:"manifiesto",
+    incidents:[{type:"Reclamo", time:"14:10", desc:"Dissatisfied with the disembarkation process and the restaurant choice in Ushuaia."}]},
+  {name:"John Vong", booking:"A4488", cabin:"415", bus:"BUS 1", flight:"DAP 820", hotel:"Mandarin Oriental", vip:false, diet:false, program:"Fly Cruise", status:"manifiesto",
+    incidents:[{type:"Reclamo", time:"09:40", desc:"Luggage damaged during transfer. Photos sent to the hospitality team in PUQ."}]},
+  {name:"Robert & Linda Kaplan", booking:"A4502", cabin:"733", bus:"BUS 2", flight:"DAP 820", hotel:"Ritz-Carlton", vip:true, diet:false, program:"Fly Cruise", status:"manifiesto", incidents:[]},
+  {name:"Priya Sharma", booking:"A4519", cabin:"508", bus:"BUS 1", flight:"DAP 820", hotel:"Mandarin Oriental", vip:false, diet:true, program:"Fly Cruise", status:"no_embarco", incidents:[]},
+  {name:"Marcus Rees", booking:"A4530", cabin:"210", bus:"BUS 2", flight:"DAP 820", hotel:"Ritz-Carlton", vip:false, diet:false, program:"Fly Cruise", status:"va_fbo_directo", incidents:[]},
+  {name:"Diane Foster", booking:"—", cabin:"—", bus:"—", flight:"DAP 820", hotel:"Mandarin Oriental", vip:false, diet:false, program:"Fly Cruise", status:"agregado_mano", incidents:[]},
+  {name:"Hiroshi Tanaka", booking:"A4551", cabin:"318", bus:"BUS 3", flight:"DAP 821", hotel:"Ritz-Carlton", vip:false, diet:false, program:"Fly Cruise", status:"manifiesto", incidents:[]},
+  {name:"Elena Popescu", booking:"A4560", cabin:"402", bus:"BUS 3", flight:"DAP 821", hotel:"Mandarin Oriental", vip:true, diet:false, program:"Fly Cruise", status:"manifiesto", incidents:[]},
+];
+let usingSampleData = true;
+const STATUS_LABELS = { manifiesto:null, no_llego:"DID NOT ARRIVE", no_embarco:"DID NOT BOARD", va_pwi_directo:"GOES DIRECTLY TO PWI", va_fbo_directo:"GOES DIRECTLY TO FBO", agregado_mano:"ADDED MANUALLY" };
+const STATUS_CLASS = { no_llego:"tag-status-red", no_embarco:"tag-status-red", va_pwi_directo:"tag-status-amber", va_fbo_directo:"tag-status-amber", agregado_mano:"tag-status-gray" };
+let currentPaxIndex = null;
+
+/* ================= EXCEL: READING AND MAPPING (same engine as Chequeo Bus Embarque) ================= */
+function normalize(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function formatCellTime(v){
+  if(v === '' || v === undefined || v === null) return '';
+  if(typeof v === 'number'){
+    const frac = v - Math.floor(v);
+    const totalMin = Math.round(frac*24*60);
+    const hh = String(Math.floor(totalMin/60)).padStart(2,'0');
+    const mm = String(totalMin%60).padStart(2,'0');
+    return hh + ':' + mm;
+  }
+  return String(v).trim();
+}
+async function readSheetSmart(file){
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data, {type:'array', cellDates:false});
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  if(!aoa.length) return null;
+  const KEYWORDS = ['booking','bkg','first','last','nombre','apellido','notes','nota','flight','vuelo','bus','hotel','fecha','date','hora'];
+  let headerIdx = -1;
+  for(let i=0; i<Math.min(aoa.length, 25); i++){
+    const cells = aoa[i].map(c=>normalize(c));
+    const hits = KEYWORDS.filter(k => cells.some(c => c.includes(k))).length;
+    if(hits >= 2){ headerIdx = i; break; }
+  }
+  if(headerIdx === -1){
+    for(let i=0; i<Math.min(aoa.length, 25); i++){
+      if(aoa[i].filter(c=>String(c).trim()!=='').length >= 3){ headerIdx = i; break; }
+    }
+  }
+  if(headerIdx === -1 || headerIdx+1 >= aoa.length) return null;
+  let maxCols = aoa[headerIdx].length;
+  for(let i=headerIdx+1; i<aoa.length; i++){ if(aoa[i].length > maxCols) maxCols = aoa[i].length; }
+  const headers = [];
+  const seen = {};
+  for(let i=0; i<maxCols; i++){
+    let name = String(aoa[headerIdx][i] || '').trim();
+    for(let up = headerIdx-1; !name && up >= 0 && up >= headerIdx-2; up--){
+      name = String((aoa[up]||[])[i] || '').trim();
+    }
+    if(!name) name = 'Column ' + (i+1);
+    if(seen[name]){ seen[name]++; name = name + ' (' + seen[name] + ')'; }
+    else seen[name] = 1;
+    headers.push(name);
+  }
+  const rows = aoa.slice(headerIdx+1)
+    .filter(r => r.some(c => String(c).trim() !== ''))
+    .map(r => { const arr = []; for(let i=0;i<maxCols;i++){ arr[i] = r[i] !== undefined ? r[i] : ''; } return arr; });
+  return {headers, rows};
+}
+function cellVal(r, idx){ return (idx===null || idx===undefined || r[idx]===undefined) ? '' : String(r[idx]).trim(); }
+function cellRaw(r, idx){ return (idx===null || idx===undefined) ? '' : r[idx]; }
+function findColIndexPriority(headers, keywords){
+  const norm = headers.map(h=>normalize(h));
+  for(const k of keywords){ const i = norm.findIndex(h => h === k); if(i >= 0) return i; }
+  for(const k of keywords){ const i = norm.findIndex(h => h.split(/[^a-z0-9]+/).filter(Boolean).includes(k)); if(i >= 0) return i; }
+  for(const k of keywords){ const i = norm.findIndex(h => h.includes(k)); if(i >= 0) return i; }
+  return -1;
+}
+
+/* ---- field configs per source (each source has its own columns) ---- */
+const HOSP_FIELDS = [
+  {key:'booking', label:'Booking Code', hints:['booking','bkgcod','bkg'], required:true},
+  {key:'firstName', label:'First Name', hints:['first name','firstname','first','nombre'], required:true},
+  {key:'lastName', label:'Last Name', hints:['last name','lastname','last','apellido','surname'], required:true},
+  {key:'cabin', label:'Cabin', hints:['cabin','cabina','suite'], required:false},
+  {key:'busNumber', label:'Bus N°', hints:['bus','autobus','coach'], required:false},
+  {key:'flightNumber', label:'Flight N°', hints:['flight number','flight','vuelo'], required:false},
+  {key:'notes', label:'Notes (VIP, diet, wheelchair, etc.)', hints:['notes','nota','observ','remark','special','request'], required:false},
+];
+const TRANSFER_FIELDS = [
+  {key:'booking', label:'Booking Code', hints:['booking','bkgcod','bkg'], required:true},
+  {key:'firstName', label:'First Name', hints:['first name','firstname','first','nombre'], required:false},
+  {key:'lastName', label:'Last Name', hints:['last name','lastname','last','apellido'], required:false},
+  {key:'arrivalDay', label:'Arrival Date (Arv Date)', hints:['arv date','arrival date','arvdate','fecha llegada','arv','arrival','dia','day','fecha','date'], required:false},
+  {key:'transferTime', label:'Arrival Time (Arv Time)', hints:['arv time','arrival time','arvtime','hora llegada','arv','arrival','hora','time'], required:false},
+];
+const HOTEL_FIELDS = [
+  {key:'booking', label:'Booking Code', hints:['booking','bkgcod','bkg'], required:true},
+  {key:'firstName', label:'First Name', hints:['first name','firstname','first','nombre'], required:false},
+  {key:'lastName', label:'Last Name', hints:['last name','lastname','last','apellido'], required:false},
+  {key:'hotelName', label:'Hotel Name', hints:['hotel','nombre hotel','property'], required:true},
+];
+const TURNAROUND_FIELDS = [
+  {key:'flightNumber', label:'Flight N°', hints:['flight number','flight','vuelo'], required:true},
+  {key:'route', label:'Route', hints:['route','ruta','sector'], required:false},
+  {key:'scheduledTime', label:'Scheduled Time', hints:['hora','time','scheduled','salida','departure'], required:false},
+];
+const SOURCES = {
+  hosp:      {fields:HOSP_FIELDS,      title:'Planilla Master Hospitality', chip:'chipHosp'},
+  transfer:  {fields:TRANSFER_FIELDS,  title:'Transfer Manifest',           chip:'chipTransfer'},
+  hotel:     {fields:HOTEL_FIELDS,     title:'Hotel Manifest',              chip:'chipHotel'},
+  turnaround:{fields:TURNAROUND_FIELDS,title:'Turnaround Profile',          chip:'chipTurnaround'},
+};
+const rawData = { hosp:null, transfer:null, hotel:null, turnaround:null }; // {rows, cols} por fuente, ya mapeados
+
+let pendingParsed = null;
+let pendingSourceKey = null;
+
+['fileHosp','fileTransfer','fileHotel','fileTurnaround'].forEach((inputId, i)=>{
+  const key = ['hosp','transfer','hotel','turnaround'][i];
+  document.getElementById(inputId).addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+    if(isPdf){
+      try{
+        await handlePdfUpload(key, file);
+      }catch(err){
+        alert('Could not read the PDF. Check that the file is not a scanned image (those do not have selectable text).\n\n'+err.message);
+      }
+      return;
+    }
+    try{
+      const parsed = await readSheetSmart(file);
+      if(!parsed || !parsed.rows.length){ alert('The file is empty or I could not read any data.'); return; }
+      pendingParsed = parsed;
+      pendingSourceKey = key;
+      openMapModal(key, parsed.headers, parsed.rows);
+    }catch(err){
+      alert('Could not read the file. Check that it is a valid Excel/CSV.\n\n'+err.message);
+    }
+  });
+});
+
+/* ---- PDF: text extraction + editable review (Turnaround Profile) ---- */
+if(window['pdfjsLib']){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+let pendingPdfSourceKey = null;
+
+async function extractPdfText(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  let fullText = '';
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    // group by approximate Y position to reconstruct lines (PDF text doesn't come with real line breaks)
+    const lines = {};
+    content.items.forEach(it=>{
+      const y = Math.round(it.transform[5]);
+      if(!lines[y]) lines[y] = [];
+      lines[y].push(it.str);
+    });
+    const ys = Object.keys(lines).map(Number).sort((a,b)=>b-a);
+    ys.forEach(y=>{ fullText += lines[y].join(' ') + '\n'; });
+    fullText += '\n';
+  }
+  return fullText;
+}
+
+function guessFlightsFromText(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const flightRe = /\b([A-Z]{2,4}\s?-?\s?\d{2,4})\b/;
+  const timeRe = /\b([01]?\d|2[0-3])[:.h]([0-5]\d)\b/;
+  const routeRe = /\b([A-Z]{3}\s?-\s?[A-Z]{3}|[A-Z]{3}\/[A-Z]{3})\b/;
+  const results = [];
+  lines.forEach(line=>{
+    const fMatch = line.match(flightRe);
+    const tMatch = line.match(timeRe);
+    if(fMatch && tMatch){
+      const rMatch = line.match(routeRe);
+      const flight = fMatch[1].replace(/\s?-\s?/,' ').trim();
+      const route = rMatch ? rMatch[1].replace(/\s/,'') : '';
+      const time = tMatch[1].padStart(2,'0') + ':' + tMatch[2];
+      results.push(flight + ' | ' + route + ' | ' + time);
+    }
+  });
+  return results;
+}
+
+async function handlePdfUpload(key, file){
+  const text = await extractPdfText(file);
+  if(!text.trim()){ alert('The PDF has no selectable text (it looks like a scan/image). Try exporting it as Excel if possible.'); return; }
+  pendingPdfSourceKey = key;
+  document.getElementById('pdfRawText').textContent = text.trim();
+  const guesses = guessFlightsFromText(text);
+  document.getElementById('pdfEditArea').value = guesses.join('\n');
+  document.getElementById('pdfOverlay').classList.add('active');
+}
+function cancelPdfReview(){
+  pendingPdfSourceKey = null;
+  document.getElementById('pdfOverlay').classList.remove('active');
+}
+function confirmPdfReview(){
+  const raw = document.getElementById('pdfEditArea').value;
+  const rows = raw.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const parts = l.split('|').map(p=>p.trim());
+    return [parts[0]||'', parts[1]||'', parts[2]||''];
+  });
+  if(!rows.length){ alert('There are no lines to upload. Add at least one flight in the format shown.'); return; }
+  rawData[pendingPdfSourceKey] = {
+    rows,
+    cols: {flightNumber:0, route:1, scheduledTime:2},
+  };
+  const src = SOURCES[pendingPdfSourceKey];
+  const chip = document.getElementById(src.chip);
+  chip.textContent = '✓ Uploaded (PDF) — ' + rows.length + ' flights';
+  chip.classList.remove('chip-pending'); chip.classList.add('chip-ok');
+  document.getElementById('pdfOverlay').classList.remove('active');
+  pendingPdfSourceKey = null;
+  rebuildPaxFromSources();
+}
+
+function openMapModal(sourceKey, headers, rows){
+  const src = SOURCES[sourceKey];
+  document.getElementById('mapTitle').textContent = 'Confirm column mapping — ' + src.title;
+  document.getElementById('mapInfo').textContent = rows.length + ' rows detected. Confirm which column matches each field:';
+  const container = document.getElementById('mapFieldsContainer');
+  container.innerHTML = src.fields.map(f=>{
+    const guessIdx = findColIndexPriority(headers, f.hints);
+    const opts = '<option value="">— select —</option>' +
+      headers.map((h,i) => '<option value="'+i+'"'+(i===guessIdx?' selected':'')+'>'+escapeHtml(h)+'</option>').join('');
+    return '<div class="map-field-row"><label>'+escapeHtml(f.label)+(f.required?' *':' (optional)')+'</label>' +
+      '<select id="mapSel_'+f.key+'" onchange="updateMapPreview()">'+opts+'</select></div>';
+  }).join('');
+  updateMapPreview();
+  document.getElementById('mapOverlay').classList.add('active');
+}
+function updateMapPreview(){
+  const src = SOURCES[pendingSourceKey];
+  const rows = (pendingParsed && pendingParsed.rows) || [];
+  const box = document.getElementById('mapPreview');
+  if(!rows.length){ box.style.display='none'; return; }
+  const sample = rows.slice(0,3).map(r=>{
+    return escapeHtml(src.fields.map(f=>{
+      const sel = document.getElementById('mapSel_'+f.key);
+      const v = sel ? sel.value : '';
+      if(v === '') return '?';
+      const idx = parseInt(v,10);
+      return f.key.toLowerCase().includes('time') ? formatCellTime(r[idx]) : String(r[idx]);
+    }).join(' | '));
+  }).join('<br>');
+  box.innerHTML = '<strong>Preview (' + src.fields.map(f=>f.label).join(' | ') + '):</strong><br>' + sample;
+  box.style.display = 'block';
+}
+function cancelMap(){
+  pendingParsed = null; pendingSourceKey = null;
+  document.getElementById('mapOverlay').classList.remove('active');
+}
+function confirmMap(){
+  const src = SOURCES[pendingSourceKey];
+  const rows = (pendingParsed && pendingParsed.rows) || [];
+  const cols = {};
+  let missing = [];
+  src.fields.forEach(f=>{
+    const v = document.getElementById('mapSel_'+f.key).value;
+    cols[f.key] = v === '' ? null : parseInt(v,10);
+    if(f.required && cols[f.key]===null) missing.push(f.label);
+  });
+  if(missing.length){ alert('Select the required columns: ' + missing.join(', ')); return; }
+  rawData[pendingSourceKey] = {rows, cols};
+  const chip = document.getElementById(src.chip);
+  chip.textContent = '✓ Uploaded — ' + rows.length + ' rows';
+  chip.classList.remove('chip-pending'); chip.classList.add('chip-ok');
+  document.getElementById('mapOverlay').classList.remove('active');
+  pendingParsed = null; pendingSourceKey = null;
+  rebuildPaxFromSources();
+}
+
+/* ---- merge engine: Hospitality = spine, Transfer + Hotel enriquecen por Booking Code ---- */
+function rebuildPaxFromSources(){
+  renderTurnaroundPreview(); // el Turnaround Profile es independiente de la Planilla Master (no es por pasajero)
+  renderInfoViajeTables(); // refresca horas de vuelo (Turnaround) y conteos aunque falte la Planilla Master
+  if(!rawData.hosp) return; // sin la base, no reconstruimos pasajeros (pero las otras fuentes pueden estar cargadas esperando)
+  usingSampleData = false;
+  const {rows, cols} = rawData.hosp;
+  const newPax = rows.map(r=>{
+    const first = cellVal(r, cols.firstName);
+    const last = cellVal(r, cols.lastName);
+    return {
+      name: (first+' '+last).trim() || '(no name)',
+      booking: cellVal(r, cols.booking) || '—',
+      cabin: cellVal(r, cols.cabin) || '—',
+      bus: cellVal(r, cols.busNumber) || '—',
+      flight: cellVal(r, cols.flightNumber) || '—',
+      hotel: null,
+      vip: /vip|venetian/i.test(cellVal(r, cols.notes)),
+      diet: /diet|vegetari|vegano|alergi/i.test(cellVal(r, cols.notes)),
+      program: 'Fly Cruise',
+      status: 'manifiesto',
+      incidents: [],
+      _notes: cellVal(r, cols.notes),
+    };
+  });
+
+  // multi-mapa: un mismo Booking Code puede traer 2+ pasajeros (pareja/familia en la misma reserva)
+  const byBooking = {};
+  const byName = {};
+  function addToMap(map, key, p){ if(!key) return; if(!map[key]) map[key] = []; map[key].push(p); }
+  newPax.forEach(p=>{
+    if(p.booking!=='—') addToMap(byBooking, normalize(p.booking), p);
+    addToMap(byName, normalize(p.name), p);
+  });
+
+  let hotelMatched = 0, hotelUnmatched = 0;
+  if(rawData.hotel){
+    const {rows:hRows, cols:hCols} = rawData.hotel;
+    hRows.forEach(r=>{
+      const bk = normalize(cellVal(r, hCols.booking));
+      const nm = normalize((cellVal(r,hCols.firstName)+' '+cellVal(r,hCols.lastName)).trim());
+      const targets = byBooking[bk] || byName[nm] || [];
+      if(targets.length){
+        targets.forEach(t=> t.hotel = cellVal(r, hCols.hotelName));
+        hotelMatched += targets.length;
+      } else hotelUnmatched++;
+    });
+  }
+  let transferMatched = 0, transferUnmatched = 0;
+  if(rawData.transfer){
+    const {rows:tRows, cols:tCols} = rawData.transfer;
+    tRows.forEach(r=>{
+      const bk = normalize(cellVal(r, tCols.booking));
+      const nm = normalize((cellVal(r,tCols.firstName)+' '+cellVal(r,tCols.lastName)).trim());
+      const targets = byBooking[bk] || byName[nm] || [];
+      if(targets.length){
+        targets.forEach(t=>{
+          t.arrivalDay = cellVal(r, tCols.arrivalDay);
+          t.transferTime = formatCellTime(cellRaw(r, tCols.transferTime));
+        });
+        transferMatched += targets.length;
+      } else transferUnmatched++;
+    });
+  }
+  newPax.forEach(p=>{ if(!p.hotel) p.hotel = '(unassigned)'; });
+
+  paxData = newPax;
+  renderPax();
+  renderInfoViajeTables();
+  if(rawData.hotel) autoFillHotelsFromData();
+
+  const discBox = document.getElementById('discrepancyBox');
+  const msgs = [];
+  if(rawData.hotel && hotelUnmatched>0) msgs.push(hotelUnmatched + ' row(s) from the Hotel Manifest did not match a passenger by Booking Code / name in the Master Sheet.');
+  if(rawData.transfer && transferUnmatched>0) msgs.push(transferUnmatched + ' row(s) from the Transfer Manifest did not match a passenger by Booking Code / name in the Master Sheet.');
+  const noHotel = newPax.filter(p=>p.hotel==='(unassigned)').length;
+  if(rawData.hotel && noHotel>0) msgs.push(noHotel + ' passenger(s) from the Master Sheet do not appear in the Hotel Manifest.');
+  if(msgs.length){ discBox.style.display='block'; discBox.innerHTML = '⚠ <b>Discrepancies detected:</b><br>' + msgs.join('<br>'); }
+  else { discBox.style.display='none'; }
+}
+
+function renderTurnaroundPreview(){
+  if(!rawData.turnaround){ document.getElementById('turnaroundPreview').innerHTML = ''; return; }
+  const {rows:trRows, cols:trCols} = rawData.turnaround;
+  const list = trRows.map(r=> escapeHtml((cellVal(r,trCols.flightNumber)||'—') + '  —  ' + (cellVal(r,trCols.route)||'') + '  —  ' + formatCellTime(cellRaw(r,trCols.scheduledTime)))).join('<br>');
+  document.getElementById('turnaroundPreview').innerHTML = '<div class="info-box"><b>Turnaround Profile uploaded (' + trRows.length + ' flights):</b><br>' + list + '</div>';
+}
+
+function hotelTagClass(hotelName){
+  if(!hotelName || hotelName==='(unassigned)') return 'tag-status-gray';
+  // simple deterministic color based on the name, to distinguish 2+ hotels without hardcoding which
+  let h=0; for(let i=0;i<hotelName.length;i++) h = (h*31 + hotelName.charCodeAt(i))>>>0;
+  return (h % 2 === 0) ? 'tag-hotel1' : 'tag-hotel2';
+}
+function cleanBusLabel(v){
+  if(!v || v==='—') return '—';
+  // evita mostrar "Bus BUS 1": saca un "bus"/"BUS" inicial si la planilla ya lo trae en el valor
+  return String(v).replace(/^\s*bus\s*/i, '').trim() || '—';
+}
+let currentFilter = {type:'all'};
+let currentSearch = '';
+let selectedDay = 'emb';
+
+function dayOffsetMap(day){ return {'-3':-3, '-2':-2, '-1':-1}[day]; } // "emb" does not filter: everyone embarks that day
+
+function computeTargetDateISO(day){
+  const offset = dayOffsetMap(day);
+  if(offset === undefined) return null;
+  const base = document.getElementById('op-date-input').value;
+  if(!base) return null;
+  const d = new Date(base+'T00:00:00');
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0,10);
+}
+
+function parseFlexibleDateISO(raw){
+  if(!raw) return null;
+  raw = String(raw).trim();
+  if(!raw) return null;
+  if(/^\d+(\.\d+)?$/.test(raw) && Number(raw) > 20000 && Number(raw) < 60000){
+    const epoch = new Date(Date.UTC(1899,11,30));
+    epoch.setUTCDate(epoch.getUTCDate() + Math.floor(Number(raw)));
+    return epoch.toISOString().slice(0,10);
+  }
+  let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); // DD/MM/YYYY (formato chileno)
+  if(m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  return null;
+}
+
+function distinctFlights(){
+  const set = new Set(paxData.map(p=>p.flight).filter(f=>f && f!=='—'));
+  return Array.from(set).sort();
+}
+function distinctBuses(){
+  const set = new Set(paxData.map(p=>cleanBusLabel(p.bus)).filter(b=>b && b!=='—'));
+  return Array.from(set).sort();
+}
+
+/* ================= INFO DEL VIAJE ================= */
+let chineseTranslatorVal = null;
+function setChineseTranslator(val){
+  chineseTranslatorVal = val;
+  document.querySelectorAll('#chineseTranslatorChips .plane-chip').forEach(c=>{
+    c.classList.toggle('active', c.dataset.val===val);
+  });
+}
+function autoFillHotelsFromData(){
+  const hotels = Array.from(new Set(paxData.map(p=>p.hotel).filter(h=>h && h!=='(unassigned)' && h!=='(added manually)')));
+  const targets = [['hotel1-name-select','hotel1-name-input'], ['hotel2-name-select','hotel2-name-input']];
+  targets.forEach(([selId, inputId], i)=>{
+    const hotelName = hotels[i];
+    if(!hotelName) return; // no sobreescribe si no hay un hotel detectado para ese slot
+    const sel = document.getElementById(selId);
+    const isKnown = Array.from(sel.options).some(o=>o.value===hotelName);
+    if(isKnown){ sel.value = hotelName; toggleCustomName(selId.replace('-name-select',''), hotelName); }
+    else { sel.value = '__other__'; toggleCustomName(selId.replace('-name-select',''), '__other__'); document.getElementById(inputId).value = hotelName; }
+  });
+  const hint = document.getElementById('hotelAutoHint');
+  if(hint && hotels.length) hint.textContent = 'Hotel(s) automatically detected from the Hotel Manifest: ' + hotels.join(', ') + '. You can correct it if needed.';
+}
+
+function getTurnaroundTimeForFlight(flightNum){
+  if(!rawData.turnaround || !flightNum) return '';
+  const {rows, cols} = rawData.turnaround;
+  const target = normalize(flightNum);
+  const match = rows.find(r => normalize(cellVal(r, cols.flightNumber)) === target);
+  if(!match) return '';
+  const t = formatCellTime(cellRaw(match, cols.scheduledTime));
+  return /^\d{2}:\d{2}$/.test(t) ? t : '';
+}
+
+function renderInfoViajeTables(){
+  const flights = distinctFlights();
+  const flightBody = document.getElementById('flightInfoBody');
+  const flightEmpty = document.getElementById('flightInfoEmpty');
+  if(!flights.length){
+    flightBody.innerHTML = '';
+    flightEmpty.style.display = 'block';
+  } else {
+    flightEmpty.style.display = 'none';
+    flightBody.innerHTML = flights.map(f=>{
+      const count = paxData.filter(p=>p.flight===f).length;
+      const id = 'flightRow_' + f.replace(/[^a-zA-Z0-9]/g,'_');
+      const autoTime = getTurnaroundTimeForFlight(f);
+      return `<tr>
+        <td style="font-weight:700;">${escapeHtml(f)}</td>
+        <td><input type="time" id="${id}_hora" value="${autoTime}">${autoTime?' <span style="font-size:9px;color:var(--gray);">(Turnaround Profile)</span>':''}</td>
+        <td><input type="text" placeholder="Ej. 3h 20min" id="${id}_tiempo" style="width:110px;"></td>
+        <td>${count}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  const buses = distinctBuses();
+  const busBody = document.getElementById('busInfoBody');
+  busBody.innerHTML = buses.length ? buses.map(b=>{
+    const count = paxData.filter(p=>cleanBusLabel(p.bus)===b).length;
+    const id = 'busRow_' + b.replace(/[^a-zA-Z0-9]/g,'_');
+    return `<tr>
+      <td style="font-weight:700;">Bus ${escapeHtml(b)}</td>
+      <td><input type="time" id="${id}_hora"></td>
+      <td>${count}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="3" style="font-style:italic;color:var(--gray);">Upload the Master Hospitality Sheet to see detected buses here.</td></tr>';
+}
+
+function renderFilterChips(){
+  const flights = distinctFlights();
+  if(currentFilter.type==='flight' && !flights.includes(currentFilter.value)) currentFilter = {type:'all'};
+  const chips = [];
+  flights.forEach(f=>{
+    const count = paxData.filter(p=>p.flight===f).length;
+    chips.push({label:`Flight ${f} (${count})`, active: currentFilter.type==='flight' && currentFilter.value===f, onclick:`setFilter('flight','${f.replace(/'/g,"\\'")}')`});
+  });
+  chips.push({label:`All (${paxData.length})`, active: currentFilter.type==='all', onclick:`setFilter('all')`});
+  chips.push({label:'VIP / Venetian', active: currentFilter.type==='vip', onclick:`setFilter('vip')`});
+  chips.push({label:'Special diets', active: currentFilter.type==='diet', onclick:`setFilter('diet')`});
+  chips.push({label:'With note / incident', active: currentFilter.type==='incidents', onclick:`setFilter('incidents')`});
+  document.getElementById('filterChips').innerHTML = chips.map(c=>
+    `<div class="fchip ${c.active?'active':''}" onclick="${c.onclick}">${escapeHtml(c.label)}</div>`
+  ).join('');
+}
+function setFilter(type, value){
+  currentFilter = {type, value};
+  renderPax();
+}
+
+function getFilteredPax(){
+  const targetDate = computeTargetDateISO(selectedDay);
+  return paxData
+    .map((p,i)=>({p,i}))
+    .filter(({p})=>{
+      if(currentFilter.type==='flight' && p.flight!==currentFilter.value) return false;
+      if(currentFilter.type==='vip' && !p.vip) return false;
+      if(currentFilter.type==='diet' && !p.diet) return false;
+      if(currentFilter.type==='incidents' && !(p.incidents && p.incidents.length>0)) return false;
+      if(targetDate){
+        const pd = parseFlexibleDateISO(p.arrivalDay);
+        if(pd !== targetDate) return false;
+      }
+      if(currentSearch){
+        const q = currentSearch;
+        const hay = (p.name+' '+p.booking+' '+p.cabin).toLowerCase();
+        if(!hay.includes(q)) return false;
+      }
+      return true;
+    });
+}
+
+function renderDayBanner(){
+  const banner = document.getElementById('dayFilterBanner');
+  if(!banner) return;
+  if(selectedDay === 'emb'){
+    banner.style.display = 'none';
+    return;
+  }
+  const targetDate = computeTargetDateISO(selectedDay);
+  const dayLabel = {'-3':'Day -3','-2':'Day -2','-1':'Day -1'}[selectedDay];
+  if(!targetDate){
+    banner.style.display = 'block';
+    banner.innerHTML = `📅 Filtering by <b>${dayLabel}</b> — the operation date is missing (set it on the <b>Cover</b> tab) to calculate which passengers arrive that day.`;
+  } else {
+    banner.style.display = 'block';
+    banner.innerHTML = `📅 Filtering by <b>${dayLabel}</b> — passengers arriving on ${formatDateLong(targetDate)}. Passengers without a recorded arrival date (Transfer Manifest) do not appear here.`;
+  }
+}
+
+function renderPax(){
+  renderFilterChips();
+  renderDayBanner();
+  const list = document.getElementById('paxList');
+  document.getElementById('paxCountHint').textContent = paxData.length + (usingSampleData ? ' sample passengers (upload the Master Hospitality Sheet to replace with real data)' : ' passengers loaded from your sheets');
+  const filtered = getFilteredPax();
+  if(!filtered.length){
+    list.innerHTML = '<div class="empty-note">No passengers match this filter/search.</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(({p,i})=>{
+    const statusLabel = STATUS_LABELS[p.status];
+    const statusTag = statusLabel ? `<span class="tag ${STATUS_CLASS[p.status]}">${statusLabel}</span>` : '';
+    const hasIncidents = p.incidents && p.incidents.length>0;
+    return `
+    <div class="pax-card" onclick="openModal(${i})">
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${hasIncidents ? `<div class="pax-alert" title="${p.incidents.length} record(s)">${p.incidents.length}</div>` : ''}
+        <div>
+          <div class="pax-name">${p.name}</div>
+          <div class="pax-meta">${p.booking!=="—" ? "#"+p.booking+" · " : ""}Cabin ${p.cabin} · Bus ${cleanBusLabel(p.bus)} · Flight ${p.flight}</div>
+        </div>
+      </div>
+      <div class="pax-tags">
+        ${statusTag}
+        ${p.hotel ? `<span class="tag ${hotelTagClass(p.hotel)}">${escapeHtml(p.hotel).toUpperCase()}</span>` : ''}
+        ${p.vip ? '<span class="tag tag-vip">⭐ VIP</span>' : ''}
+        ${p.diet ? '<span class="tag tag-diet">DIET</span>' : ''}
+        ${p.wheelchair ? '<span class="tag tag-wheelchair">♿ Wheelchair</span>' : ''}
+        ${p.noBp ? '<span class="tag tag-nobp">🎫 No BP</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+renderPax();
+renderInfoViajeTables();
+
+function openModal(i){
+  currentPaxIndex = i;
+  const p = paxData[i];
+  document.getElementById('modalName').textContent = p.name;
+  document.getElementById('modalMeta').textContent = (p.booking!=="—" ? `Booking #${p.booking} · ` : '') + `Cabin ${p.cabin}`;
+  document.getElementById('modalFlight').textContent = p.flight;
+  document.getElementById('modalBus').textContent = cleanBusLabel(p.bus);
+  document.getElementById('modalHotel').textContent = p.hotel;
+  document.getElementById('modalProgram').textContent = "Antarctica " + p.program;
+  document.getElementById('modalStatus').value = p.status;
+  document.getElementById('flagVip').checked = !!p.vip;
+  document.getElementById('flagWheelchair').checked = !!p.wheelchair;
+  document.getElementById('flagNoBp').checked = !!p.noBp;
+  document.getElementById('incidentForm').style.display = 'none';
+  document.getElementById('protocolBox').style.display = 'none';
+  document.getElementById('noBpBox').style.display = 'none';
+  renderIncidents();
+  document.getElementById('paxOverlay').classList.add('active');
+}
+document.getElementById('flagVip').addEventListener('change', (e)=>{ paxData[currentPaxIndex].vip = e.target.checked; renderPax(); });
+document.getElementById('flagWheelchair').addEventListener('change', (e)=>{ paxData[currentPaxIndex].wheelchair = e.target.checked; renderPax(); });
+document.getElementById('flagNoBp').addEventListener('change', (e)=>{ paxData[currentPaxIndex].noBp = e.target.checked; renderPax(); });
+document.getElementById('closeModal').onclick = ()=> document.getElementById('paxOverlay').classList.remove('active');
+document.getElementById('paxOverlay').onclick = (e)=>{ if(e.target.id==='paxOverlay') e.currentTarget.classList.remove('active'); };
+document.getElementById('modalStatus').addEventListener('change', (e)=>{ paxData[currentPaxIndex].status = e.target.value; renderPax(); });
+
+function renderIncidents(){
+  const p = paxData[currentPaxIndex];
+  const box = document.getElementById('incidentHistory');
+  if(!p.incidents || p.incidents.length===0){ box.innerHTML = '<div class="empty-note">No records for this passenger.</div>'; return; }
+  box.innerHTML = p.incidents.map(inc=>`
+    <div class="incident-entry"><span class="itype">${inc.type}</span><span class="itime">${inc.time}</span><div class="idesc">${inc.desc}</div></div>
+  `).join('');
+}
+document.getElementById('toggleIncidentForm').addEventListener('click', ()=>{
+  const f = document.getElementById('incidentForm'); f.style.display = f.style.display==='none' ? 'block' : 'none';
+});
+document.getElementById('incidentType').addEventListener('change', (e)=>{
+  const isAccident = e.target.value === 'Medical attention' || e.target.value === 'Accident / Illness';
+  document.getElementById('protocolBox').style.display = isAccident ? 'block' : 'none';
+  document.getElementById('noBpBox').style.display = (e.target.value === 'No Boarding Pass (collect at FBO)') ? 'block' : 'none';
+});
+document.getElementById('saveIncidentBtn').addEventListener('click', ()=>{
+  const type = document.getElementById('incidentType').value;
+  const desc = document.getElementById('incidentDesc').value.trim();
+  if(!desc){ document.getElementById('incidentDesc').focus(); return; }
+  const now = new Date(); const time = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  paxData[currentPaxIndex].incidents.push({type, time, desc});
+  document.getElementById('incidentDesc').value=''; document.getElementById('incidentForm').style.display='none'; document.getElementById('protocolBox').style.display='none'; document.getElementById('noBpBox').style.display='none';
+  renderIncidents(); renderPax();
+});
+document.getElementById('addPaxBtn').addEventListener('click', ()=>{ const f=document.getElementById('addPaxForm'); f.style.display = f.style.display==='none'?'block':'none'; });
+document.getElementById('cancelPaxBtn').addEventListener('click', ()=>{ document.getElementById('addPaxForm').style.display='none'; });
+document.getElementById('savePaxBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('newPaxName').value.trim();
+  const flight = document.getElementById('newPaxFlight').value.trim() || '—';
+  const note = document.getElementById('newPaxNote').value.trim();
+  if(!name){ document.getElementById('newPaxName').focus(); return; }
+  paxData.push({name, booking:"—", cabin:"—", bus:"—", flight, hotel:"(added manually)", vip:false, diet:false, program:"Fly Cruise", status:"agregado_mano", incidents: note?[{type:"Other",time:"—",desc:note}]:[]});
+  document.getElementById('newPaxName').value=''; document.getElementById('newPaxNote').value=''; document.getElementById('addPaxForm').style.display='none';
+  renderPax();
+});
+document.getElementById('paxSearch').addEventListener('input', (e)=>{
+  currentSearch = e.target.value.trim().toLowerCase();
+  renderPax();
+});
+
+/* ================= TABS ================= */
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('screen-'+tab.dataset.screen).classList.add('active');
+  });
+});
+
+/* ================= LOGIN / PORTADA ================= */
+const voyageDB = {
+  "E4260118015": {ship:"Silver Endeavour", dateISO:"2026-01-18", port:"King George"},
+  "WI270319020": {ship:"Silver Wind", dateISO:"2027-03-19", port:"King George"},
+};
+let sessionVoyage = '—';
+let sessionJm1 = '—';
+const planeState = { staff:null, jm1:null, jm2:null, jm3:null };
+let sessionRole = null;
+
+function formatDateLong(isoDate){
+  if(!isoDate) return '';
+  const [y,m,d] = isoDate.split('-').map(Number);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return months[m-1] + ' ' + d + ', ' + y;
+}
+function onOperationDetailChange(){
+  const ship = getSelectedName('ship');
+  const dateVal = document.getElementById('op-date-input').value;
+  document.getElementById('lookupShip').textContent = ship || '(not selected — choose above)';
+  document.getElementById('lookupDate').textContent = dateVal ? ('Embarkation: ' + formatDateLong(dateVal)) : 'Date not set — select it above';
+  updateTopbar();
+}
+document.getElementById('ship-name-input').addEventListener('input', onOperationDetailChange);
+document.getElementById('op-date-input').addEventListener('input', onOperationDetailChange);
+
+function selectRole(role){
+  sessionRole = role;
+  document.querySelectorAll('#roleChips .plane-chip').forEach(c=>{
+    c.classList.toggle('active', c.dataset.role===role);
+  });
+  const block = document.getElementById('staffPlaneBlock');
+  if(role === 'jm'){
+    block.style.display = 'block';
+  } else {
+    block.style.display = 'none';
+    planeState.staff = null;
+    document.querySelectorAll('#staffPlaneChips .plane-chip').forEach(c=>c.classList.remove('active'));
+    checkPlaneDuplicates();
+  }
+  updateTeamBlockVisibility();
+}
+
+function updateTeamBlockVisibility(){
+  const jm1Block = document.getElementById('jm1Block');
+  const teamHint = document.getElementById('teamHint');
+  if(!jm1Block) return;
+  if(sessionRole === 'ejecutivo'){
+    jm1Block.style.display = 'block';
+    teamHint.textContent = 'As Executive you do not have an assigned flight — fill in the operation\'s 3 Journey Managers.';
+  } else {
+    jm1Block.style.display = 'none';
+    planeState.jm1 = null;
+    document.querySelectorAll('#jm1PlaneChips .plane-chip').forEach(c=>c.classList.remove('active'));
+    teamHint.textContent = 'Fill in the other 2 Journey Managers for the operation.';
+    checkPlaneDuplicates();
+  }
+}
+
+function toggleCustomName(prefix, value){
+  const input = document.getElementById(prefix+'-name-input');
+  if(value === '__other__'){
+    input.style.display = 'block';
+    input.value = '';
+    input.focus();
+  } else {
+    input.style.display = 'none';
+    input.value = value;
+  }
+  if(prefix !== 'staff') updateTopbar();
+}
+function getSelectedName(prefix){
+  const sel = document.getElementById(prefix+'-name-select');
+  const input = document.getElementById(prefix+'-name-input');
+  if(sel.value === '__other__') return input.value.trim();
+  return sel.value;
+}
+function selectPlane(prefix, n){
+  planeState[prefix] = n;
+  document.querySelectorAll('#'+prefix+'PlaneChips .plane-chip').forEach(c=>{
+    c.classList.toggle('active', parseInt(c.dataset.plane,10)===n);
+  });
+  checkPlaneDuplicates();
+  if(prefix !== 'staff') updateTopbar();
+}
+function checkPlaneDuplicates(){
+  const box = document.getElementById('planeWarning');
+  if(!box) return;
+  const used = [planeState.staff, planeState.jm1, planeState.jm2, planeState.jm3].filter(v=>v!==null && v!==undefined);
+  const dup = used.some((v,i)=> used.indexOf(v) !== i);
+  if(dup){
+    box.style.display = 'block';
+    box.textContent = '⚠ Two Journey Managers have the same assigned plane — check the selection.';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function login(){
+  const code = document.getElementById('op-id-input').value.trim().toUpperCase();
+  const name = getSelectedName('staff');
+  const errBox = document.getElementById('loginError');
+  if(!code || !sessionRole || !name || (sessionRole==='jm' && !planeState.staff)){
+    errBox.textContent = !sessionRole
+      ? 'Select your role (Executive or Journey Manager) to continue.'
+      : (sessionRole==='jm' && !planeState.staff)
+        ? 'As Journey Manager, select your assigned plane to continue.'
+        : 'Enter the operation ID and your name to continue.';
+    errBox.style.display = 'block';
+    return;
+  }
+  errBox.style.display = 'none';
+  sessionVoyage = code;
+  sessionJm1 = name;
+
+  // auto-suggestion if the code matches the (small) sample database — always editable afterward
+  const info = voyageDB[code];
+  const shipSel = document.getElementById('ship-name-select');
+  if(info){
+    const knownOption = Array.from(shipSel.options).some(o=>o.value===info.ship);
+    if(knownOption){ shipSel.value = info.ship; toggleCustomName('ship', info.ship); }
+    else { shipSel.value = '__other__'; toggleCustomName('ship', '__other__'); document.getElementById('ship-name-input').value = info.ship; }
+    document.getElementById('op-date-input').value = info.dateISO;
+  }
+  onOperationDetailChange();
+  document.getElementById('summaryVoyage').textContent = code;
+  const roleTag = sessionRole==='ejecutivo' ? ' (Executive)' : (planeState.staff ? ' (Plane '+planeState.staff+')' : '');
+  document.getElementById('summaryJm1').textContent = name + roleTag;
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  updateTopbar();
+}
+
+document.getElementById('op-id-input').addEventListener('keydown', (e)=>{ if(e.key==='Enter') document.getElementById('staff-name-select').focus(); });
+document.getElementById('staff-name-input').addEventListener('keydown', (e)=>{ if(e.key==='Enter') login(); });
+document.getElementById('jm1-name-input').addEventListener('input', updateTopbar);
+document.getElementById('jm2-name-input').addEventListener('input', updateTopbar);
+document.getElementById('jm3-name-input').addEventListener('input', updateTopbar);
+
+function updateTopbar(){
+  const ship = document.getElementById('lookupShip').textContent || '—';
+  const loggedLabel = sessionJm1 + (sessionRole==='ejecutivo' ? ' (Executive)' : (planeState.staff ? ' (Plane '+planeState.staff+')' : ''));
+  const jm2Name = getSelectedName('jm2') || '—';
+  const jm3Name = getSelectedName('jm3') || '—';
+  const jm2Label = jm2Name==='—' ? '—' : jm2Name + (planeState.jm2 ? ' (Plane '+planeState.jm2+')' : '');
+  const jm3Label = jm3Name==='—' ? '—' : jm3Name + (planeState.jm3 ? ' (Plane '+planeState.jm3+')' : '');
+  let teamParts = [loggedLabel];
+  if(sessionRole === 'ejecutivo'){
+    const jm1Name = getSelectedName('jm1') || '—';
+    const jm1Label = jm1Name==='—' ? '—' : jm1Name + (planeState.jm1 ? ' (Plane '+planeState.jm1+')' : '');
+    teamParts.push(jm1Label);
+  }
+  teamParts.push(jm2Label, jm3Label);
+  document.getElementById('topbarMeta').innerHTML = `
+    <div class="topbar-col"><div class="lbl">Voyage</div><div class="val">${sessionVoyage}</div></div>
+    <div class="topbar-col"><div class="lbl">Ship</div><div class="val">${ship}</div></div>
+    <div class="topbar-col"><div class="lbl">JM Team</div><div class="val">${teamParts.join(' · ')}</div></div>
+  `;
+}
+
+const dayContent = {
+  "-1": "Arrival in Santiago the day before embarkation. The JM gathers ship information (WhatsApp / email / phone), checks in at the hotel alongside the Hospitality Desk, and takes part in the <b>Meet & Greet</b> with passengers: coordinating the space, aligning the welcome speech with the other 2 JMs, and answering general questions.",
+  "-2": "Operation with 2 days\' lead time. Same process as Day -1, but with an extra day of team availability added — whether there are additional JM activities that first day is still to be defined.",
+  "-3": "Operation with 3 days\' lead time. Same process as Day -1/-2, with one extra day of buffer — specific content to be defined if it differs from the rest.",
+  "emb": "Embarkation day. The JM takes the first bus of their charter (without introducing themselves to passengers — that was already done the day before — and without standing up during the ride, since the guide is the one giving information). It continues with the FBO process and the flight — see <b>Embarkation Checklist, Stage 1</b> for the field-by-field detail.",
+};
+function chooseDay(day){
+  selectedDay = day;
+  document.querySelectorAll('.dchip').forEach(c=>c.classList.toggle('active', c.dataset.day===day));
+  const panel = document.getElementById('dayPanel');
+  if(panel) panel.innerHTML = dayContent[day];
+  renderPax();
+}
+document.querySelectorAll('.dchip').forEach(chip=>{
+  chip.addEventListener('click', ()=> chooseDay(chip.dataset.day));
+});
+document.querySelector('.dchip.active').click();
+
+/* ================= CHECKLIST DATA ================= */
+const FLIGHT_FIELDS = [
+  {type:'time', label:'Door closing time'},
+  {type:'time', label:'Time the plane started moving (pushback / taxi)'},
+  {type:'time', label:'Takeoff time'},
+  {type:'time', label:'Time the seatbelt sign was turned off'},
+  {type:'number', label:'Number of cabin crew'},
+  {type:'counttext', label:'Announcements made by the cabin crew', textPlaceholder:'Announcement content…'},
+  {type:'counttext', label:'Announcements made from the cockpit', textPlaceholder:'Announcement content…'},
+  {type:'counttext', label:'Announcements given by the JM on board', textPlaceholder:'Announcement content…'},
+  {type:'time', label:'Time crew came out with the meal service to the cabin'},
+  {type:'yesno', label:'Was the meal service delivered as established?'},
+  {type:'text', label:'What did the meal service consist of?'},
+  {type:'photo', label:'Photo of the tray received'},
+  {type:'number', label:'How many meal carts came out to the cabin?'},
+  {type:'text', label:'Which rows did they start from?'},
+  {type:'text', label:'Which row is the JM in?'},
+  {type:'yesno', label:'Was the food at the right temperature?'},
+  {type:'counttext', label:'After the service, how often did the crew come out to the cabin?', textPlaceholder:'E.g. every 20 minutes…'},
+  {type:'text', label:'Passenger comments about the flight or meal service'},
+  {type:'time', label:'Landing time'},
+  {type:'yesno', label:'Was there turbulence that interrupted service?'},
+];
+const HOTEL_ARRIVAL_FIELDS = [
+  {type:'time', label:'Time the last passenger received their key'},
+  {type:'counttext', label:'Announcements made at the hotel', textPlaceholder:'How they were made (verbal, sign, etc.)…'},
+  {type:'time', label:'Dinner start time'},
+  {type:'time', label:'Dinner end time'},
+  {type:'yesnotime', label:'Was information given about the next day\'s flight departure?'},
+];
+const HOTEL_ARRIVAL_FIELDS_EMB = [
+  {type:'time', label:'Time the last passenger received their key'},
+  {type:'time', label:'Time the biosecurity briefing took place'},
+  {type:'time', label:'Time passengers\' clothing was disinfected'},
+  {type:'counttext', label:'Announcements made at the hotel', textPlaceholder:'How they were made (verbal, sign, etc.)…'},
+  {type:'time', label:'Dinner start time'},
+  {type:'time', label:'Dinner end time'},
+  {type:'yesnotime', label:'Was information given about the next day\'s flight departure?'},
+];
+const HOTEL_DEPARTURE_FIELDS = [
+  {type:'time', label:'Breakfast time'},
+  {type:'time', label:'Scheduled flight time'},
+  {type:'time', label:'Departure time of the first transfer'},
+  {type:'time', label:'Arrival time of the first transfer at the airport'},
+  {type:'time', label:'Arrival time of the last transfer at the airport'},
+  {type:'counttext', label:'Announcements made at the airport for DAP passengers', textPlaceholder:'Announcement content…'},
+  {type:'time', label:'Time boarding started'},
+  {type:'time', label:'Time the last passenger passed through security'},
+];
+
+const stagesEmb = [
+  { id:'e0', title:'Hotel — Day -1', tag:'Check-in and Meet & Greet · Santiago',
+    fields:[
+      {type:'time', label:'Hotel check-in time'},
+      {type:'checkbox', label:'Ship information gathered and reviewed (WhatsApp / email / phone) before check-in'},
+      {type:'checkbox', label:'Support provided to the Hospitality Desk team (without taking over the desk)'},
+      {type:'checkbox', label:'Role in the Meet & Greet fulfilled (coordinating the space / chairs / order and cleanliness)'},
+      {type:'checkbox', label:'Welcome speech aligned with the other 2 JMs and delivered to passengers'},
+      {type:'checkbox', label:'Venetian Society passengers recognized by name, thanking them for their loyalty'},
+      {type:'yesno', label:'Were there any complaints or cases resolved by coordinators or executives?'},
+      {type:'yesno', label:'Were there cases requiring the emergency email or contacting the ship directly?'},
+    ]},
+  { id:'e1', title:'Hotel and Transfer to the FBO', tag:'Embarkation day · Santiago',
+    note:'The JM does give information to passengers — before boarding the bus and upon arrival at the FBO. No information is given during the bus ride for safety reasons (moving around while the bus is in motion is dangerous); besides, during the ~30-minute ride the guide handles that. If the JM wants to add extra information, they can.',
+    fields:[
+      {type:'section', label:'At the hotel'},
+      {type:'yesno', label:'Were all the flight\'s bags taken to the FBO?'},
+      {type:'yesno', label:'If a passenger did not bring out their bag, was it loaded on the JM\'s bus and unloaded at the FBO?'},
+      {type:'checkbox', label:'JM spoke with passengers before boarding the buses'},
+
+      {type:'section', label:'Pick-up and bus transfer'},
+      {type:'time', label:'Scheduled pick-up time (reference)'},
+      {type:'time', label:'Boarding time'},
+      {type:'yesno', label:'Were boarding passes handed out at the bus door?'},
+      {type:'yesno', label:'Were there passengers who did not receive their boarding pass?'},
+      {type:'text', label:'Explain what happened'},
+      {type:'number', label:'How many passengers did not receive their BP?'},
+      {type:'time', label:'Bus departure time'},
+      {type:'checkbox', label:'JM took the first bus of their charter'},
+      {type:'yesno', label:'Were front-row seats reserved for VIP and reduced-mobility passengers?'},
+      {type:'yesno', label:'Was the bus clean?'},
+      {type:'yesno', label:'Did the guide give passengers the required information during the ride?'},
+
+      {type:'section', label:'At the FBO'},
+      {type:'time', label:'Arrival time at the FBO'},
+      {type:'time', label:'Arrival time of the last bus at the FBO'},
+      {type:'time', label:'Time the last passenger passed through security'},
+      {type:'yesno', label:'Were there any luggage issues going through security?'},
+
+      {type:'section', label:'Boarding lounge and flight'},
+      {type:'counttext', label:'Announcements given in the boarding lounge for passenger information', textPlaceholder:'Announcement content…'},
+      {type:'yesno', label:'Was the information screen on and showing clear information?'},
+      {type:'counttext', label:'Announcements given by the JM in the boarding lounge', textPlaceholder:'Announcement content…'},
+      {type:'time', label:'Time boarding started'},
+      {type:'time', label:'Time the flight\'s last passenger boarded'},
+      {type:'checkbox', label:'Waiting room checked before the JM boarded'},
+    ]},
+  { id:'e2', title:'Flight Leg', tag:'Santiago → Puerto Williams', fields: FLIGHT_FIELDS },
+  { id:'e3', title:'Arrival in Puerto Williams', tag:'Airport → Hotel',
+    fields:[
+      {type:'time', label:'Time the last passenger passed through security'},
+      {type:'yesno', label:'Were passengers clear about their transfers to the hotel?'},
+      {type:'time', label:'Departure time of the first bus to the hotel'},
+      {type:'time', label:'Arrival time of the last bus at the hotel'},
+    ]},
+  { id:'e4', title:'Arrival and Check-in at The Cormorant', tag:'Antarctica Fly Cruise',
+    note:'Only 1 night at the hotel: at this stage they arrive, at the next they leave.',
+    fields: HOTEL_ARRIVAL_FIELDS_EMB },
+  { id:'e5', title:'Departure from the Cormorant to the King George Flight', tag:'Antarctica Fly Cruise',
+    fields: HOTEL_DEPARTURE_FIELDS },
+  { id:'e6', title:'Flight Puerto Williams → King George', tag:'Boarding the ship', standby:true,
+    note:'STAND BY — only applies if the JM travels with passengers to KGG (*still to be confirmed for each trip).',
+    fields:[
+      {type:'yesno', label:'Did the JM travel with passengers to KGG?'},
+      {type:'time', label:'Time of deplaning in KGG (if traveled)'},
+      {type:'time', label:'Time the JM returned with the disembarking passengers\' plane'},
+    ]},
+];
+
+const stagesDes = [
+  { id:'d1', title:'Reception at Puerto Williams Airport', tag:'Arrival from King George',
+    fields:[
+      {type:'time', label:'Landing time of the flight from KGG'},
+      {type:'time', label:'Time the last passenger left the security area'},
+      {type:'yesno', label:'Were passengers received by Silversea staff and guided to their vehicles?'},
+      {type:'time', label:'Departure time of the first bus to the hotel'},
+      {type:'time', label:'Arrival time of the last bus at the hotel'},
+    ]},
+  { id:'d2', title:'Arrival and Check-in at The Cormorant', tag:'1 night', fields: HOTEL_ARRIVAL_FIELDS },
+  { id:'d3', title:'Departure from the Cormorant to the Santiago Flight', tag:'Antarctica Fly Cruise', fields: HOTEL_DEPARTURE_FIELDS },
+  { id:'d4', title:'Flight Leg', tag:'Puerto Williams → Santiago', fields: FLIGHT_FIELDS },
+  { id:'d5', title:'Arrival in Santiago and Transfer to the Hotel', tag:'Closing the assignment',
+    fields:[
+      {type:'time', label:'Time passengers were able to deplane'},
+      {type:'yesno', label:'Were there any lost-luggage claims?'},
+      {type:'time', label:'Time the last passenger left'},
+      {type:'time', label:'Time the JM left'},
+      {type:'yesno', label:'Did the JM go to the hotel?'},
+      {type:'yesno', label:'If they went to the hotel, was their transfer with a guide?'},
+      {type:'time', label:'Time they arrived to catch their transfer'},
+      {type:'time', label:'Time they boarded their transfer'},
+      {type:'time', label:'Time they arrived at the hotel'},
+      {type:'time', label:'Time the assignment was considered complete'},
+    ]},
+];
+
+let currentFlow = 'emb';
+let currentStageIdx = 0;
+
+function currentStages(){ return currentFlow==='emb' ? stagesEmb : stagesDes; }
+
+function renderStageStrip(){
+  const strip = document.getElementById('stageStrip');
+  strip.innerHTML = currentStages().map((s,i)=>`<div class="stage-pill ${i===currentStageIdx?'active':''}" data-i="${i}">${i+1} · ${s.title.split(' ').slice(0,3).join(' ')}</div>`).join('');
+  strip.querySelectorAll('.stage-pill').forEach(pill=>{
+    pill.addEventListener('click', ()=>{ currentStageIdx = parseInt(pill.dataset.i); renderAll(); });
+  });
+}
+
+function toggleYesNoDetail(inputId, value){
+  const detail = document.getElementById(inputId+'_detail');
+  if(!detail) return;
+  detail.style.display = (value === 'Yes') ? 'block' : 'none';
+}
+function fieldInput(sid, idx, f){
+  const inputId = `f_${sid}_${idx}`;
+  let inputHtml = '';
+  if(f.type==='time') inputHtml = `<input type="time" id="${inputId}">`;
+  else if(f.type==='number') inputHtml = `<input type="number" id="${inputId}" min="0">`;
+  else if(f.type==='text') inputHtml = `<input type="text" id="${inputId}" placeholder="Type…">`;
+  else if(f.type==='yesno') inputHtml = `<select id="${inputId}"><option value="">—</option><option>Yes</option><option>No</option><option>N/A</option></select>`;
+  else if(f.type==='yesnotime') inputHtml = `<select id="${inputId}" onchange="toggleYesNoDetail('${inputId}', this.value)"><option value="">—</option><option>Yes</option><option>No</option><option>N/A</option></select>`;
+  else if(f.type==='checkbox') inputHtml = `<input type="checkbox" id="${inputId}">`;
+  else if(f.type==='photo') inputHtml = `
+      <label class="photo-btn" id="lbl_${inputId}" for="${inputId}">📷 Attach photo</label>
+      <input type="file" accept="image/*" class="photo-input" id="${inputId}">`;
+  else if(f.type==='counttext') inputHtml = `
+      <input type="number" min="0" class="count-input" id="${inputId}_n" placeholder="N°" title="Quantity">
+      <input type="text" class="count-text" id="${inputId}_t" placeholder="${f.textPlaceholder||'Detail / content…'}">`;
+  return inputHtml;
+}
+
+function renderFields(){
+  const stage = currentStages()[currentStageIdx];
+  document.getElementById('ctxStageTag').textContent = stage.tag;
+  document.getElementById('ctxStageTitle').textContent = stage.title;
+  let noteHtml = '';
+  if(stage.standby) noteHtml += `<span class="standby-badge">STAND BY</span>`;
+  if(stage.note) noteHtml += `<div class="stage-note">${stage.note}</div>`;
+  document.getElementById('ctxNote').innerHTML = noteHtml;
+
+  const container = document.getElementById('fieldsContainer');
+  container.innerHTML = stage.fields.map((f,idx)=>{
+    if(f.type==='section'){
+      return `<div class="field-section">${escapeHtml(f.label)}</div>`;
+    }
+    return `
+    <div class="field-row">
+      <div class="field-row-top">
+        <label for="f_${stage.id}_${idx}">${f.label}</label>
+        <div class="field-input">
+          ${fieldInput(stage.id, idx, f)}
+          <button class="cmt-btn" data-target="cmt_${stage.id}_${idx}" title="Add comment">💬</button>
+        </div>
+      </div>
+      ${f.type==='yesnotime' ? `
+      <div class="yn-detail" id="f_${stage.id}_${idx}_detail" style="display:none;">
+        <div class="field-input" style="margin-top:6px;">
+          <input type="time" id="f_${stage.id}_${idx}_time" title="Time">
+          <input type="text" class="count-text" id="f_${stage.id}_${idx}_cmt" placeholder="Comments…" style="width:260px !important;">
+        </div>
+      </div>` : ''}
+      <div class="cmt-box" id="cmt_${stage.id}_${idx}">
+        <textarea placeholder="Comment on this item…"></textarea>
+      </div>
+    </div>
+  `;
+  }).join('');
+
+  container.querySelectorAll('.photo-input').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      const lbl = document.getElementById('lbl_'+inp.id);
+      if(inp.files && inp.files.length>0){
+        lbl.textContent = '✓ ' + inp.files[0].name;
+        lbl.classList.add('has-photo');
+      } else {
+        lbl.textContent = '📷 Attach photo';
+        lbl.classList.remove('has-photo');
+      }
+    });
+  });
+  container.querySelectorAll('.cmt-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const box = document.getElementById(btn.dataset.target);
+      box.classList.toggle('show');
+    });
+  });
+  container.querySelectorAll('.cmt-box textarea').forEach(ta=>{
+    ta.addEventListener('input', ()=>{
+      const box = ta.closest('.cmt-box');
+      const btn = container.querySelector(`.cmt-btn[data-target="${box.id}"]`);
+      btn.classList.toggle('has-text', ta.value.trim().length>0);
+    });
+  });
+}
+
+function renderAll(){ renderStageStrip(); renderFields(); }
+
+document.getElementById('btnEmbarque').addEventListener('click', ()=>{
+  currentFlow='emb'; currentStageIdx=0;
+  document.getElementById('btnEmbarque').classList.add('active');
+  document.getElementById('btnDesembarque').classList.remove('active');
+  document.getElementById('cmtGeneralEmb').style.display='block';
+  document.getElementById('cmtGeneralDes').style.display='none';
+  renderAll();
+});
+document.getElementById('btnDesembarque').addEventListener('click', ()=>{
+  currentFlow='des'; currentStageIdx=0;
+  document.getElementById('btnDesembarque').classList.add('active');
+  document.getElementById('btnEmbarque').classList.remove('active');
+  document.getElementById('cmtGeneralDes').style.display='block';
+  document.getElementById('cmtGeneralEmb').style.display='none';
+  renderAll();
+});
+
+renderAll();
+
+
+/* ================= EXPORTAR: WORD (.doc via HTML blob) y EXCEL (.xlsx real) ================= */
+const ILS_LOGO_DATAURI = "data:image/png;base64,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";
+
+function todayStr(){ return new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric"}); }
+function nowHM(){ return new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",hour12:false}); }
+
+function downloadWordDoc(bodyHtml, title, filenameBase){
+  const doc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+    'xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><title>'+escapeHtml(title)+'</title></head>' +
+    '<body style="font-family:Calibri, Arial, sans-serif;">' + bodyHtml + '</body></html>';
+  const blob = new Blob(["\ufeff", doc], {type: "application/msword"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filenameBase + ".doc";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+function wordDocHead(title, count, countLabel){
+  const ship = document.getElementById("lookupShip").textContent || "";
+  const dateLabel = document.getElementById("lookupDate").textContent || "";
+  return '<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#0F2A43" style="background-color:#0F2A43; margin:0 0 4pt 0;"><tr><td bgcolor="#0F2A43" style="background-color:#0F2A43; padding:18pt 16pt; text-align:center;">' +
+    '<img src="'+ILS_LOGO_DATAURI+'" width="90" style="display:block; margin:0 auto 8pt;">' +
+    '<div style="font-size:16pt; color:#ffffff; font-weight:bold; font-family:Calibri, Arial, sans-serif;">'+escapeHtml(title)+'</div>' +
+    '<div style="font-size:10.5pt; color:#BFD6E8; margin-top:5pt; font-family:Calibri, Arial, sans-serif;">' +
+      escapeHtml(ship) + (sessionVoyage!=="—" ? " — Voyage " + escapeHtml(sessionVoyage) : "") + (dateLabel ? " — " + escapeHtml(dateLabel.replace("Embarkation: ","")) : "") +
+    '</div>' +
+  '</td></tr></table>' +
+  '<p style="font-size:9pt; color:#333333; margin:6pt 0 16pt; font-family:Calibri, Arial, sans-serif; text-align:center;">Generated on ' + todayStr() + ' at ' + nowHM() + ' hrs' + (count!==undefined && count!==null ? ' — ' + count + ' ' + (countLabel||'') : '') + '</p>';
+}
+
+function wordSectionTitle(t){
+  return '<h2 style="font-size:13pt; margin:16pt 0 8pt; color:#0F2A43; font-family:Calibri, Arial, sans-serif;">'+escapeHtml(t)+'</h2>';
+}
+function wordTableHtml(headers, rows){
+  if(!rows.length) return '<p style="font-size:9pt; color:#777; font-style:italic; margin:0 0 16pt; font-family:Calibri, Arial, sans-serif;">No data.</p>';
+  const thead = '<tr>' + headers.map(h=>'<th bgcolor="#0F2A43" style="background-color:#0F2A43; border:0.5pt solid #999; padding:5pt; font-size:8.5pt; color:#fff; text-align:left;">'+escapeHtml(h)+'</th>').join('') + '</tr>';
+  const tbody = rows.map(r=>'<tr>' + r.map(c=>'<td style="border:0.5pt solid #999; padding:4pt; font-size:8.5pt;">'+escapeHtml(c===undefined||c===null?'':String(c))+'</td>').join('') + '</tr>').join('');
+  return '<table style="border-collapse:collapse; width:100%; margin:0 0 16pt;">' + thead + tbody + '</table>';
+}
+function incidentCardHtml(paxName, inc){
+  return '<div style="border:1pt solid #B9C7D3; border-radius:6pt; padding:10pt 12pt; margin:0 0 12pt; font-family:Calibri, Arial, sans-serif;">' +
+    '<p style="font-size:11.5pt; margin:0 0 6pt; font-weight:bold; text-transform:uppercase;">' + escapeHtml(paxName) + '</p>' +
+    '<p style="font-size:9pt; color:#333333; margin:0 0 8pt;"><b>TIME:</b> ' + escapeHtml(inc.time||'—') + '</p>' +
+    '<p style="font-size:10.5pt; margin:0 0 4pt;"><b>TYPE —</b> ' + escapeHtml(inc.type) + '</p>' +
+    '<p style="font-size:10.5pt; margin:0;"><b>DETAIL —</b> ' + escapeHtml(inc.desc||'') + '</p>' +
+  '</div>';
+}
+
+function fval(id){ const el = document.getElementById(id); return el ? el.value.trim() : ""; }
+
+function downloadWordReport(){
+  const jm2 = getSelectedName("jm2") || "—";
+  const jm3 = getSelectedName("jm3") || "—";
+  const jm1 = sessionRole==="ejecutivo" ? (getSelectedName("jm1")||"—") : sessionJm1;
+  const head = wordDocHead("Journey Manager Report", paxData.length, "passengers");
+
+  const resumenHtml = wordSectionTitle("Operation Summary") + wordTableHtml(
+    ["Voyage","Ship","Date","Logged in as","JM 1","JM 2","JM 3"],
+    [[ sessionVoyage, document.getElementById("lookupShip").textContent||"", document.getElementById("lookupDate").textContent||"", sessionJm1 + (sessionRole==="ejecutivo"?" (Executive)":""), jm1, jm2, jm3 ]]
+  );
+
+  const flights = distinctFlights();
+  const buses = distinctBuses();
+  const flightRows = flights.map(f=>{
+    const id = 'flightRow_' + f.replace(/[^a-zA-Z0-9]/g,'_');
+    return [f, fval(id+'_hora'), fval(id+'_tiempo'), paxData.filter(p=>p.flight===f).length];
+  });
+  const busRows = buses.map(b=>{
+    const id = 'busRow_' + b.replace(/[^a-zA-Z0-9]/g,'_');
+    return ['Bus '+b, fval(id+'_hora'), paxData.filter(p=>cleanBusLabel(p.bus)===b).length];
+  });
+  const infoViajeHtml = wordSectionTitle("Trip Information") + wordTableHtml(
+    ["Field","Value"],
+    [
+      ["Hotel 1", getSelectedName("hotel1")||""],
+      ["Hotel 2", getSelectedName("hotel2")||""],
+      ["Hospitality Room — Day -2", fval("infoSalonD2")],
+      ["Hospitality Schedule — Day -2", fval("infoHorarioD2")],
+      ["Hospitality Room — Day -1", fval("infoSalonD1")],
+      ["Hospitality Schedule — Day -1", fval("infoHorarioD1")],
+      ["Hospitality Desk Comments", fval("infoSalonUbicacion")],
+      ["Check-in Location", fval("infoCheckin")],
+      ["Waiting Area", fval("infoWaitingArea")],
+      ["Breakfast Location (Day -1)", fval("infoDesayunoLugar")],
+      ["Breakfast Schedule", fval("infoDesayunoHorario")],
+      ["Pull Out Time", fval("infoPullOutHora")],
+      ["Luggage Room (Pull Out)", fval("infoPullOutSalon")],
+      ["Bus Departure Location", fval("infoBusLugarSalida")],
+      ["Chinese translator?", chineseTranslatorVal==="si"?"Yes":(chineseTranslatorVal==="no"?"No":"")],
+      ["Who? (translator)", fval("infoTraductorQuien")],
+      ["Special groups", fval("infoGruposEspeciales")],
+      ["VIP Notes", fval("infoNotasVip")],
+    ]
+  );
+  const busesHtml = wordSectionTitle("Buses") + wordTableHtml(["Bus","Departure Time","N° pax"], busRows);
+  const flightsHtml = wordSectionTitle("Flights") + wordTableHtml(["Flight","Departure Time","Flight Time","N° pax"], flightRows);
+
+  const paxRows = paxData.map(p=>[
+    p.name, p.booking, p.cabin, cleanBusLabel(p.bus), p.flight, p.hotel||"", STATUS_LABELS[p.status]||"On manifest",
+    p.vip?"Yes":"No", p.wheelchair?"Yes":"No", p.noBp?"Yes":"No"
+  ]);
+  const paxHtml = wordSectionTitle("Passengers") + wordTableHtml(["Name","Booking","Cabin","Bus","Flight","Hotel","Status","VIP","Wheelchair","No BP"], paxRows);
+
+  let incidentsHtml = wordSectionTitle("Incident and Complaint Log");
+  const allIncidents = [];
+  paxData.forEach(p=> (p.incidents||[]).forEach(inc=> allIncidents.push({paxName:p.name, inc})));
+  if(!allIncidents.length){
+    incidentsHtml += '<p style="font-size:9pt; color:#777; font-style:italic; margin:0 0 16pt; font-family:Calibri, Arial, sans-serif;">No incidents recorded.</p>';
+  } else {
+    incidentsHtml += allIncidents.map(x=>incidentCardHtml(x.paxName, x.inc)).join('');
+  }
+
+  downloadWordDoc(head + resumenHtml + infoViajeHtml + busesHtml + flightsHtml + paxHtml + incidentsHtml, "Journey Manager Report", "JM_Report_" + (sessionVoyage!=="—"?sessionVoyage:"operation"));
+}
+
+function downloadExcelReport(){
+  const paxRows = paxData.map(p=>({
+    "Name": p.name, "Booking": p.booking, "Cabin": p.cabin, "Bus": cleanBusLabel(p.bus),
+    "Flight": p.flight, "Hotel": p.hotel||"", "Program": p.program, "Status": STATUS_LABELS[p.status]||"On manifest",
+    "VIP/Venetian": p.vip?"Yes":"No", "Wheelchair": p.wheelchair?"Yes":"No", "No BP": p.noBp?"Yes":"No", "Special Diet": p.diet?"Yes":"No",
+    "Arrival Date (Transfer)": p.arrivalDay||"", "Transfer Time (Transfer)": p.transferTime||"",
+  }));
+  const wsPax = XLSX.utils.json_to_sheet(paxRows);
+
+  const incRows = [];
+  paxData.forEach(p=> (p.incidents||[]).forEach(inc=> incRows.push({
+    "Passenger": p.name, "Booking": p.booking, "Time": inc.time, "Type": inc.type, "Description": inc.desc,
+  })));
+  const wsInc = XLSX.utils.json_to_sheet(incRows.length ? incRows : [{"Passenger":"","Booking":"","Time":"","Type":"","Description":""}]);
+
+  const infoRows = [
+    {"Field":"Hotel 1","Value":getSelectedName("hotel1")||""},
+    {"Field":"Hotel 2","Value":getSelectedName("hotel2")||""},
+    {"Field":"Hospitality Room — Day -2","Value":fval("infoSalonD2")},
+    {"Field":"Hospitality Schedule — Day -2","Value":fval("infoHorarioD2")},
+    {"Field":"Hospitality Room — Day -1","Value":fval("infoSalonD1")},
+    {"Field":"Hospitality Schedule — Day -1","Value":fval("infoHorarioD1")},
+    {"Field":"Hospitality Desk Comments","Value":fval("infoSalonUbicacion")},
+    {"Field":"Check-in Location","Value":fval("infoCheckin")},
+    {"Field":"Waiting Area","Value":fval("infoWaitingArea")},
+    {"Field":"Breakfast Location (Day -1)","Value":fval("infoDesayunoLugar")},
+    {"Field":"Breakfast Schedule","Value":fval("infoDesayunoHorario")},
+    {"Field":"Pull Out Time","Value":fval("infoPullOutHora")},
+    {"Field":"Luggage Room (Pull Out)","Value":fval("infoPullOutSalon")},
+    {"Field":"Bus Departure Location","Value":fval("infoBusLugarSalida")},
+    {"Field":"Chinese translator?","Value":chineseTranslatorVal==="si"?"Yes":(chineseTranslatorVal==="no"?"No":"")},
+    {"Field":"Who? (translator)","Value":fval("infoTraductorQuien")},
+    {"Field":"Special groups","Value":fval("infoGruposEspeciales")},
+    {"Field":"VIP Notes","Value":fval("infoNotasVip")},
+  ];
+  const wsInfo = XLSX.utils.json_to_sheet(infoRows);
+
+  const flightRows = distinctFlights().map(f=>{
+    const id = 'flightRow_' + f.replace(/[^a-zA-Z0-9]/g,'_');
+    return {"Flight":f, "Departure Time":fval(id+'_hora'), "Flight Time":fval(id+'_tiempo'), "N° pax": paxData.filter(p=>p.flight===f).length};
+  });
+  const wsFlights = XLSX.utils.json_to_sheet(flightRows.length ? flightRows : [{"Flight":"","Departure Time":"","Flight Time":"","N° pax":""}]);
+
+  const busRows = distinctBuses().map(b=>{
+    const id = 'busRow_' + b.replace(/[^a-zA-Z0-9]/g,'_');
+    return {"Bus":'Bus '+b, "Departure Time":fval(id+'_hora'), "N° pax": paxData.filter(p=>cleanBusLabel(p.bus)===b).length};
+  });
+  const wsBuses = XLSX.utils.json_to_sheet(busRows.length ? busRows : [{"Bus":"","Departure Time":"","N° pax":""}]);
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, wsInfo, "Trip Info");
+  XLSX.utils.book_append_sheet(wb, wsPax, "Passengers");
+  XLSX.utils.book_append_sheet(wb, wsFlights, "Flights");
+  XLSX.utils.book_append_sheet(wb, wsBuses, "Buses");
+  XLSX.utils.book_append_sheet(wb, wsInc, "Incidents");
+  XLSX.writeFile(wb, "Consolidated_Data_" + (sessionVoyage!=="—"?sessionVoyage:"operation") + ".xlsx");
+}
+</script>
+<!-- ---- PDF review modal (Turnaround Profile) ---- -->
+<div class="overlay" id="pdfOverlay">
+  <div class="pdf-modal">
+    <h3>Review data extracted from the PDF — Turnaround Profile</h3>
+    <p class="map-info">A PDF has no columns, so the extracted text may come out disordered. Review/fix the list below before confirming — one flight per line, in this format:</p>
+    <p class="map-info" style="font-family:monospace;background:#f7fafb;padding:6px 10px;border-radius:6px;">Flight N° | Route | Scheduled Time (HH:MM)</p>
+    <div class="field-label">Text extracted from the PDF (reference)</div>
+    <div class="pdf-raw-box" id="pdfRawText"></div>
+    <div class="field-label">Detected flights — edit, add, or delete lines</div>
+    <textarea class="pdf-edit-textarea" id="pdfEditArea" placeholder="DAP 820 | SCL-PWI | 13:30&#10;DAP 821 | PWI-SCL | 09:00"></textarea>
+    <div class="map-actions">
+      <button class="btn btn-ghost btn-sm" onclick="cancelPdfReview()">Cancel</button>
+      <button class="btn btn-sm" onclick="confirmPdfReview()">Confirm and upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---- column mapping modal ---- -->
+<div class="overlay" id="mapOverlay">
+  <div class="map-modal">
+    <h3 id="mapTitle">Confirm column mapping</h3>
+    <div class="map-info" id="mapInfo"></div>
+    <div id="mapFieldsContainer"></div>
+    <div class="map-preview" id="mapPreview"></div>
+    <div class="map-actions">
+      <button class="btn btn-ghost btn-sm" onclick="cancelMap()">Cancel</button>
+      <button class="btn btn-sm" onclick="confirmMap()">Confirm and upload</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
