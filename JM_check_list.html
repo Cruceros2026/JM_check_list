@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JM Passengers — Draft v3.20 (live data)</title>
+<title>JM Passengers — Draft v3.22 (live data)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@9.7.2/dist/index.iife.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
   :root{
     --navy:#0f2d4e; --navy2:#0d3d5e; --teal:#1a7a8a; --teal-dark:#155f6d;
@@ -215,6 +216,27 @@
   .cmt-box.show{display:block;}
   .cmt-box textarea{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;min-height:44px;font-family:inherit;}
 
+  /* v3.22 — phone layout: tags wrap instead of overflowing, tables fit the screen, paired-time inputs */
+  .pax-card>div:first-child{min-width:0;}
+  .pax-tags{flex-wrap:wrap;justify-content:flex-end;min-width:0;max-width:100%;}
+  .log-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px;}
+  .log-table th{background:#f1f5f9;color:var(--navy);text-align:left;padding:6px 6px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border);vertical-align:bottom;word-wrap:break-word;}
+  .log-table td{padding:5px 4px;border-bottom:1px solid var(--border);vertical-align:middle;word-wrap:break-word;}
+  .log-table input{width:100%;min-width:0;box-sizing:border-box;padding:5px 4px;border:1px solid var(--border);border-radius:6px;font-size:12px;}
+  .time2{display:flex;gap:8px;flex-wrap:wrap;}
+  .time2 label{display:flex;flex-direction:column;gap:2px;font-size:10.5px;font-weight:600;color:#6b7a8c;}
+  .time2 input[type=time]{width:104px;}
+
+  @media (max-width:640px){
+    .pax-card{flex-direction:column;align-items:flex-start;}
+    .pax-tags{justify-content:flex-start;}
+    .field-input{flex-wrap:wrap;flex-shrink:1;max-width:100%;}
+    .count-text{width:100% !important;flex:1 1 140px;}
+    .log-table th{font-size:10px;padding:5px 3px;}
+    .log-table td{padding:4px 2px;}
+    .log-table input{font-size:11.5px;padding:4px 2px;}
+  }
+
   @media (max-width:640px){
     .grid2{grid-template-columns:1fr;}
     .topbar-meta{display:none;}
@@ -236,7 +258,7 @@
     <img class="login-logo-img" src="data:image/png;base64,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" alt="ILS Tours" />
     <div class="login-title-row">
       <div class="login-title">JM Passengers</div>
-      <span class="login-version-badge">draft v3.20</span>
+      <span class="login-version-badge">draft v3.22</span>
     </div>
     <div class="login-sub">Journey Manager · Live-data instructive</div>
     <div class="login-info-box">To operate you'll need to upload the operation's Consolidated Sheet (PASAJEROS / VUELOS / NOTAS OPERACION tabs) — it can be loaded after signing in.</div>
@@ -280,7 +302,7 @@
     <div class="topbar-row">
       <div class="topbar-title">
         <h1>JM Passengers</h1>
-        <span class="badge-draft">draft v3.20</span>
+        <span class="badge-draft">draft v3.22</span>
       </div>
       <div class="topbar-data" id="topbarMeta">
         <div class="topbar-col"><div class="lbl">Voyage</div><div class="val">—</div></div>
@@ -817,6 +839,15 @@ function gatherFullState(){
 
 function localBackupKey(operationId){ return 'jmPasajerosBackup_' + operationId.trim().toUpperCase(); }
 
+/* v3.22 — pending-sync tracking: anything not yet confirmed in the cloud is retried automatically */
+let syncDirty = false, dirtyVer = 0, syncRetryTimer = null;
+function scheduleSyncRetry(){
+  if(syncRetryTimer) return;
+  syncRetryTimer = setInterval(()=>{
+    if(!syncDirty){ clearInterval(syncRetryTimer); syncRetryTimer = null; return; }
+    if(navigator.onLine) attemptFlushLocalBackup();
+  }, 20000);
+}
 function saveLocalBackup(){
   if(!sessionVoyage || sessionVoyage === '—') return;
   try{
@@ -825,6 +856,7 @@ function saveLocalBackup(){
 }
 
 function pushStateToFirebase(){
+  syncDirty = true; dirtyVer++; scheduleSyncRetry();
   saveLocalBackup(); // siempre — así nada se pierde aunque no haya señal (ej. en vuelo)
   if(!sessionVoyage || sessionVoyage === '—') return;
   if(!((firebaseReady && operationRef) || useRest)) return;
@@ -833,9 +865,10 @@ function pushStateToFirebase(){
   showSyncBadge('saving…');
   pushTimer = setTimeout(()=>{
     if(!navigator.onLine){ showSyncBadge('offline — saved locally 💾'); return; }
+    const myVer = dirtyVer;
     cloudWrite(gatherFullState())
-      .then(()=> showSyncBadge('synced ✓'))
-      .catch(err=>{ console.error('Error guardando en Firebase:', err); showSyncBadge('offline — saved locally 💾 ['+((err&&(err.code||err.message))||'error')+']'); });
+      .then(()=>{ if(dirtyVer===myVer) syncDirty = false; showSyncBadge('synced ✓'); })
+      .catch(err=>{ syncDirty = true; scheduleSyncRetry(); console.error('Error guardando en Firebase:', err); showSyncBadge('offline — saved locally 💾 ['+((err&&(err.code||err.message))||'error')+']'); });
   }, 700);
 }
 
@@ -876,12 +909,15 @@ function cloudWrite(state){
 function attemptFlushLocalBackup(){
   if(!sessionVoyage || sessionVoyage === '—') return;
   if(!((firebaseReady && operationRef) || useRest)) return;
-  const raw = localStorage.getItem(localBackupKey(sessionVoyage));
-  if(!raw) return;
+  let raw = null;
+  try{ raw = localStorage.getItem(localBackupKey(sessionVoyage)); }catch(e){}
+  if(!raw && !syncDirty) return;
   try{
-    const backup = JSON.parse(raw);
+    const myVer = dirtyVer;
+    // if this session has unsynced edits, the live state is the newest one (the stored copy may be older if the device storage was full)
+    const backup = syncDirty ? gatherFullState() : JSON.parse(raw);
     cloudWrite(backup)
-      .then(()=> showSyncBadge('reconnected — synced ✓'))
+      .then(()=> { if(dirtyVer===myVer) syncDirty = false; showSyncBadge('reconnected — synced ✓'); })
       .catch(err=> console.error('No se pudo subir el respaldo local guardado sin conexión:', err));
   }catch(e){ console.error('Respaldo local dañado:', e); }
 }
@@ -890,6 +926,9 @@ window.addEventListener('online', ()=>{
   showSyncBadge('connection restored — syncing…');
   attemptFlushLocalBackup();
 });
+/* v3.22 — when the app comes back to the foreground, push whatever is still pending */
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && syncDirty && navigator.onLine) attemptFlushLocalBackup(); });
+window.addEventListener('focus', ()=>{ if(syncDirty && navigator.onLine) attemptFlushLocalBackup(); });
 window.addEventListener('offline', ()=>{
   showSyncBadge('offline — saving locally 💾');
 });
@@ -2088,27 +2127,37 @@ document.querySelector('.dchip.active').click();
 
 /* ================= CHECKLIST DATA ================= */
 const FLIGHT_FIELDS = [
-  {type:'time', label:'Door closing time'},
-  {type:'time', label:'Time the aircraft started moving (pushback / taxi)'},
-  {type:'time', label:'Takeoff time'},
-  {type:'time', label:'Time the seatbelt sign was turned off'},
-  {type:'number', label:'N° of cabin crew'},
-  {type:'counttext', label:'Announcements made by the cabin crew', textPlaceholder:'Content of the announcement…'},
-  {type:'counttext', label:'Announcements made from the flight deck', textPlaceholder:'Content of the announcement…'},
-  {type:'counttext', label:'Announcements made by the JM onboard', textPlaceholder:'Content of the announcement…'},
-  {type:'time', label:'Time the crew came out with the meal service to the cabin'},
-  {type:'yesno', label:'Was the meal service delivered as established?'},
-  {type:'text', label:'What did the meal service consist of?'},
-  {type:'photo', label:'Photo of the tray received'},
-  {type:'number', label:'How many meal carts went out to the cabin?'},
-  {type:'text', label:'Which rows did they start from?'},
-  {type:'text', label:'Which row is the JM in?'},
-  {type:'yesno', label:'Was the food at the right temperature?'},
-  {type:'counttext', label:'After the service, how often did the crew go out to the cabin?', textPlaceholder:'E.g. every 20 minutes…'},
-  {type:'text', label:'Passenger comments about the flight or the meal service'},
-  {type:'time', label:'Landing time'},
-  {type:'time', label:'Door opening time'},
-  {type:'yesno', label:'Was there turbulence that interrupted the service?'},
+  {type:'time', id:'0', label:'Door closing time'},
+  {type:'time', id:'1', label:'Time the aircraft started moving (pushback / taxi)'},
+  {type:'time', id:'2', label:'Takeoff time'},
+  {type:'time', id:'3', label:'Time the seatbelt sign was turned off'},
+  {type:'number', id:'4', label:'N° of cabin crew'},
+  {type:'counttext', id:'5', label:'Announcements made by the cabin crew', textPlaceholder:'Content of the announcement…'},
+  {type:'counttext', id:'6', label:'Announcements made from the flight deck', textPlaceholder:'Content of the announcement…'},
+  {type:'counttext', id:'7', label:'Announcements made by the JM onboard', textPlaceholder:'Content of the announcement…'},
+  {type:'time2', id:'cart1', label:'Time the first carts went out to the cabin'},
+  {type:'time2', id:'cart2', label:'Time those first carts finished'},
+  {type:'time2', id:'cart3', label:'Time of the 2nd departure of both carts'},
+  {type:'time2', id:'cart4', label:'Time both carts finished that 2nd departure'},
+  {type:'time2', id:'cart5', label:'Time they went out to collect the trays'},
+  {type:'time2', id:'cart6', label:'Time they finished collecting the trays'},
+  {type:'yesno', id:'9', label:'Was the meal service delivered as established?'},
+  {type:'text', id:'10', label:'What did the meal service consist of?'},
+  {type:'photo', id:'11', label:'Photo of the tray received'},
+  {type:'number', id:'12', label:'How many meal carts went out to the cabin?'},
+  {type:'text', id:'13', label:'Which rows did they start from?'},
+  {type:'text', id:'14', label:'Which row is the JM in?'},
+  {type:'yesno', id:'15', label:'Was the food at the right temperature?'},
+  {type:'counttext', id:'16', label:'After the service, how often did the crew go out to the cabin?', textPlaceholder:'E.g. every 20 minutes…'},
+  {type:'text', id:'17', label:'Passenger comments about the flight or the meal service'},
+  {type:'time', id:'lan', label:'Time of the landing announcement'},
+  {type:'time', id:'18', label:'Landing time'},
+  {type:'time', id:'gate', label:'Arrival at gate'},
+  {type:'time', id:'19', label:'Door opening time'},
+  {type:'time', id:'dps', label:'Deplaning start'},
+  {type:'time', id:'dpe', label:'Deplaning end'},
+  {type:'checkbox', id:'corm', label:'Removal of Cormorant items (check that passengers did not leave anything on board)'},
+  {type:'yesno', id:'20', label:'Was there turbulence that interrupted the service?'},
 ];
 const HOTEL_ARRIVAL_FIELDS = [
   {type:'yesno', label:'Did all passengers have their key in the room mailbox?'},
@@ -2203,13 +2252,19 @@ const stagesEmb = [
   { id:'e6', title:'Puerto Williams → King George Flight', tag:'Boarding the ship', standby:true,
     note:'STAND BY — only applies if the JM travels with passengers to KGG (*still to be confirmed on each trip).',
     fields:[
-      {type:'yesno', label:'Did the JM travel with passengers to KGG?'},
-      {type:'time', label:'Time of disembarking the aircraft in KGG (if traveled)'},
-      {type:'time', label:'Time the JM returned with the disembarking passengers\' aircraft'},
+      {type:'section', label:'Fill in ONLY if the JM does NOT travel with the passengers to KGG'},
+      {type:'yesno', id:'0', label:'Did the JM travel with passengers to KGG?'},
+      {type:'time', id:'1', label:'Time of disembarking the aircraft in KGG (if traveled)'},
+      {type:'time', id:'2', label:'Time the JM returned with the disembarking passengers\' aircraft'},
+      {type:'section', label:'Flight checks (same as Flight Leg) — fill in ONLY if the JM travels to KGG'},
+      ...FLIGHT_FIELDS.filter(f=>f.type!=='section').map(f=>Object.assign({}, f, {id:'k'+f.id})),
     ]},
 ];
 
 const stagesDes = [
+  { id:'d0', title:'King George → Puerto Williams Flight', tag:'Disembarkation — return from KGG', standby:true,
+    note:'STAND BY — only applies if the JM returns with the passengers from KGG (*still to be confirmed on each trip).',
+    fields: FLIGHT_FIELDS.filter(f=>f.type!=='section').map(f=>Object.assign({}, f, {id:'r'+f.id})) },
   { id:'d1', title:'Reception at the Puerto Williams Airport', tag:'Arrival from King George',
     fields:[
       {type:'time', label:'Landing time of the flight from KGG'},
@@ -2239,8 +2294,16 @@ const stagesDes = [
 let currentFlow = 'emb';
 const checklistValues = {};
 
+/* stable key of a field: its explicit id if it has one, otherwise its position (keeps answers saved before v3.22 valid) */
+function fieldKey(f, idx){ return (f && f.id!==undefined) ? f.id : idx; }
+
 function fieldSavedText(stage, idx, f){
-  const id = `f_${stage.id}_${idx}`;
+  const id = `f_${stage.id}_${fieldKey(f, idx)}`;
+  if(f.type==='time2'){
+    const a = checklistValues[id+'_a']; const b = checklistValues[id+'_b'];
+    if(!a && !b) return null;
+    return 'Front cart: ' + (a||'—') + ' · Rear cart: ' + (b||'—');
+  }
   if(f.type==='counttext'){
     const n = checklistValues[id+'_n']; const t = checklistValues[id+'_t'];
     if(!n && !t) return null;
@@ -2278,9 +2341,10 @@ function collectChecklistReportRows(){
       stage.fields.forEach((f, idx)=>{
         if(f.type==='section') return;
         const answer = fieldSavedText(stage, idx, f);
-        const cmt = checklistValues['ta_'+stage.id+'_'+idx] || '';
+        const cmt = checklistValues['ta_'+stage.id+'_'+fieldKey(f, idx)] || '';
         if(answer===null && !cmt) return; // don't show unfilled items, to avoid inflating the report
-        rows.push([flowLabel, stage.title, f.label, answer||'—', cmt]);
+        if(f.type==='time2'){ const kid = `f_${stage.id}_${fieldKey(f, idx)}`; rows.push([flowLabel, stage.title, f.label, answer||'—', cmt, {front: checklistValues[kid+'_a']||'', rear: checklistValues[kid+'_b']||''}]); }
+        else rows.push([flowLabel, stage.title, f.label, answer||'—', cmt]);
       });
     });
     const general = fval(generalId);
@@ -2330,9 +2394,10 @@ function toggleYesNoDetail(inputId, value){
   detail.style.display = (value === 'Yes') ? 'block' : 'none';
 }
 function fieldInput(sid, idx, f){
-  const inputId = `f_${sid}_${idx}`;
+  const inputId = `f_${sid}_${fieldKey(f, idx)}`;
   let inputHtml = '';
   if(f.type==='time') inputHtml = `<input type="time" id="${inputId}">`;
+  else if(f.type==='time2') inputHtml = `<div class="time2"><label>Front cart<input type="time" id="${inputId}_a"></label><label>Rear cart<input type="time" id="${inputId}_b"></label></div>`;
   else if(f.type==='number') inputHtml = `<input type="number" id="${inputId}" min="0">`;
   else if(f.type==='text') inputHtml = `<input type="text" id="${inputId}" placeholder="Type here…">`;
   else if(f.type==='yesno') inputHtml = `<select id="${inputId}"><option value="">—</option><option>Yes</option><option>No</option><option>N/A</option></select>`;
@@ -2387,27 +2452,28 @@ function renderFields(){
 
   const container = document.getElementById('fieldsContainer');
   container.innerHTML = stage.fields.map((f,idx)=>{
+    const fid = fieldKey(f, idx);
     if(f.type==='section'){
       return `<div class="field-section">${escapeHtml(f.label)}</div>`;
     }
     return `
     <div class="field-row">
       <div class="field-row-top">
-        <label for="f_${stage.id}_${idx}">${f.label}</label>
+        <label for="f_${stage.id}_${fid}">${f.label}</label>
         <div class="field-input">
           ${fieldInput(stage.id, idx, f)}
-          <button class="cmt-btn" data-target="cmt_${stage.id}_${idx}" title="Add comment">💬</button>
+          <button class="cmt-btn" data-target="cmt_${stage.id}_${fid}" title="Add comment">💬</button>
         </div>
       </div>
       ${f.type==='yesnotime' ? `
-      <div class="yn-detail" id="f_${stage.id}_${idx}_detail" style="display:none;">
+      <div class="yn-detail" id="f_${stage.id}_${fid}_detail" style="display:none;">
         <div class="field-input" style="margin-top:6px;">
-          <input type="time" id="f_${stage.id}_${idx}_time" title="Time">
-          <input type="text" class="count-text" id="f_${stage.id}_${idx}_cmt" placeholder="Comments…" style="width:260px !important;">
+          <input type="time" id="f_${stage.id}_${fid}_time" title="Time">
+          <input type="text" class="count-text" id="f_${stage.id}_${fid}_cmt" placeholder="Comments…" style="width:260px !important;">
         </div>
       </div>` : ''}
-      <div class="cmt-box" id="cmt_${stage.id}_${idx}">
-        <textarea id="ta_${stage.id}_${idx}" placeholder="Comment on this item…"></textarea>
+      <div class="cmt-box" id="cmt_${stage.id}_${fid}">
+        <textarea id="ta_${stage.id}_${fid}" placeholder="Comment on this item…"></textarea>
       </div>
     </div>
   `;
@@ -2868,7 +2934,59 @@ async function downloadWordReport(){
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 
-function downloadExcelReport(){
+function excelData(){
+  const paxRows = paxData.map(p=>({
+    "Name": p.name, "Booking": p.booking, "Cabin": p.cabin, "Bus": cleanBusLabel(p.bus),
+    "Flight": p.flight, "Hotel": p.hotel||"", "Program": p.program, "Status": STATUS_LABELS[p.status]||"On manifest",
+    "VIP": p.vip?"Yes":"No", "Venetian": p.venetian?"Yes":"No", "Birthday": p.birthday?"Yes":"No", "Birthday date": p.birthdayLabel||"", "Wheelchair": p.wheelchair?"Yes":"No", "Early check-in": p.earlyCheckin?"Yes":"No", "Pre land": p.preLand?"Yes":"No", "Post land": p.postLand?"Yes":"No", "No BP": p.noBp?"Yes":"No", "Special diet": p.diet?"Yes":"No",
+    "Special meal": (p.mealCodes&&p.mealCodes.length)?p.mealCodes.join(', '):"", "Notes": p._notes||"",
+    "Arrival date (Transfer)": p.arrivalDay||"", "Transfer time (Transfer)": p.transferTime||"",
+  }));
+
+  const incRows = [];
+  paxData.forEach(p=> (p.incidents||[]).forEach(inc=> incRows.push({
+    "Passenger": p.name, "Booking": p.booking, "Time": inc.time, "Type": inc.type, "Description": inc.desc,
+  })));
+
+  const jm2x = getSelectedName("jm2") || "—";
+  const jm3x = getSelectedName("jm3") || "—";
+  const jm1x = sessionRole==="ejecutivo" ? (getSelectedName("jm1")||"—") : sessionJm1;
+  const infoRows = [
+    {"Field":"Booking / Voyage","Value":sessionVoyage},
+    {"Field":"Ship","Value":document.getElementById("lookupShip").textContent||""},
+    {"Field":"Flights","Value":distinctFlights().join(', ')||"—"},
+    {"Field":"Operation date","Value":document.getElementById("lookupDate").textContent||""},
+    {"Field":"Report generated","Value":todayStr()+' '+nowHM()},
+    {"Field":"Signed in as","Value":sessionJm1 + (sessionRole==="ejecutivo"?" (Executive)":"")},
+    {"Field":"JM 1","Value":jm1x}, {"Field":"JM 2","Value":jm2x}, {"Field":"JM 3","Value":jm3x},
+    {"Field":"Hotel 1","Value":getSelectedName("hotel1")||""},
+    {"Field":"Hotel 2","Value":getSelectedName("hotel2")||""},
+    {"Field":"Check-in Location","Value":fval("infoCheckin")},
+    {"Field":"Waiting Area","Value":fval("infoWaitingArea")},
+    {"Field":"Breakfast Location (Day -1)","Value":fval("infoDesayunoLugar")},
+    {"Field":"Breakfast Schedule","Value":fval("infoDesayunoHorario")},
+    {"Field":"Bus Departure Location","Value":fval("infoBusLugarSalida")},
+    {"Field":"Chinese translator?","Value":chineseTranslatorVal==="si"?"Yes":(chineseTranslatorVal==="no"?"No":"")},
+    {"Field":"Who? (translator)","Value":fval("infoTraductorQuien")},
+    {"Field":"Special groups","Value":fval("infoGruposEspeciales")},
+    {"Field":"VIP notes","Value":fval("infoNotasVip")},
+  ];
+
+  const flightRows = distinctFlights().map(f=>{
+    const id = 'flightRow_' + f.replace(/[^a-zA-Z0-9]/g,'_');
+    return {"Flight":f, "Departure time":fval(id+'_hora'), "Flight time":fval(id+'_tiempo'), "N° pax": paxData.filter(p=>p.flight===f).length};
+  });
+
+  const busRows = distinctBuses().map(b=>{
+    const id = 'busRow_' + b.replace(/[^a-zA-Z0-9]/g,'_');
+    return {"Bus":'Bus '+b, "Departure time":fval(id+'_hora'), "N° pax": paxData.filter(p=>cleanBusLabel(p.bus)===b).length};
+  });
+
+  const checklistRows = collectChecklistReportRows();
+
+  return {paxRows, incRows, infoRows, flightRows, busRows, checklistRows};
+}
+function downloadExcelReportBasic(){
   const paxRows = paxData.map(p=>({
     "Name": p.name, "Booking": p.booking, "Cabin": p.cabin, "Bus": cleanBusLabel(p.bus),
     "Flight": p.flight, "Hotel": p.hotel||"", "Program": p.program, "Status": STATUS_LABELS[p.status]||"On manifest",
@@ -2936,6 +3054,96 @@ function downloadExcelReport(){
   XLSX.utils.book_append_sheet(wb, wsChecklistDes, "Disembarkation Checklist");
   XLSX.utils.book_append_sheet(wb, wsInc, "Incidents");
   XLSX.writeFile(wb, "Consolidated_Data_" + (sessionVoyage!=="—"?sessionVoyage:"operation") + ".xlsx");
+}
+
+/* ================= v3.22 — styled Excel (ExcelJS); falls back to the plain SheetJS export if the library did not load ================= */
+const XL = {"sheets": ["Trip Info", "Operational Notes", "Passengers", "Flights", "Buses", "Embarkation Checklist", "Disembarkation Checklist", "Incidents"], "flowE": "Embarkation", "flowD": "Disembarkation", "stage": "Stage", "item": "Item", "ans": "Answer", "front": "Front cart", "rear": "Rear cart", "cmt": "Comment", "cat": "Category", "det": "Detail", "nonotes": "(No operational notes loaded)", "empty": "(No data)", "gen": "Generated", "fname": "Consolidated_Data_", "op": "operation", "nd": "Operational Notes"};
+async function downloadExcelReport(){
+  if(typeof ExcelJS === 'undefined'){ downloadExcelReportBasic(); return; }
+  try{
+    const D = excelData();
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'ILS Tours — JM'; wb.created = new Date();
+    const NAVY='FF0F2D4E', TEAL='FF1A7A8A', ZEBRA='FFF4F8FB', SPECIAL='FFEEF8FD', LINE='FFD6E0E8', STAGEB='FFE3F1F6';
+    const thin = {style:'thin', color:{argb:LINE}};
+    const border = {top:thin, left:thin, bottom:thin, right:thin};
+    const voyage = (sessionVoyage!=='—' ? sessionVoyage : '');
+    const subtitle = [voyage, document.getElementById('lookupShip')?document.getElementById('lookupShip').textContent:'', XL.gen+': '+todayStr()+' '+nowHM()].filter(Boolean).join('  ·  ');
+    function addTable(name, rows, opts){
+      opts = opts || {};
+      const ws = wb.addWorksheet(name.slice(0,31), {views:[{state:'frozen', ySplit:3, showGridLines:false}], pageSetup:{orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0}});
+      let keys = rows.length ? Object.keys(rows[0]) : [XL.empty];
+      if(!rows.length) rows = [{[XL.empty]:''}];
+      const n = keys.length;
+      ws.mergeCells(1,1,1,Math.max(n,2));
+      const t = ws.getCell(1,1); t.value = name + (voyage?(' — '+voyage):'');
+      t.font = {bold:true, size:14, color:{argb:'FFFFFFFF'}, name:'Calibri'};
+      t.fill = {type:'pattern', pattern:'solid', fgColor:{argb:NAVY}};
+      t.alignment = {vertical:'middle', horizontal:'left', indent:1};
+      ws.getRow(1).height = 26;
+      ws.mergeCells(2,1,2,Math.max(n,2));
+      const st = ws.getCell(2,1); st.value = subtitle;
+      st.font = {italic:true, size:10, color:{argb:'FF55697C'}, name:'Calibri'};
+      st.alignment = {vertical:'middle', horizontal:'left', indent:1};
+      keys.forEach((k,i)=>{
+        const c = ws.getCell(3,i+1); c.value = k;
+        c.font = {bold:true, color:{argb:'FFFFFFFF'}, size:11, name:'Calibri'};
+        c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:TEAL}};
+        c.alignment = {vertical:'middle', horizontal:'center', wrapText:true};
+        c.border = border;
+        let w = String(k).length + 4;
+        rows.forEach(r=>{ const v = r[k]==null?'':String(r[k]); const longest = v.split('\n').reduce((m,x)=>Math.max(m,x.length),0); if(longest+2>w) w = longest+2; });
+        ws.getColumn(i+1).width = Math.max(10, Math.min(opts.maxW||60, w));
+      });
+      ws.getRow(3).height = 24;
+      rows.forEach((r,ri)=>{
+        const row = ws.getRow(4+ri);
+        keys.forEach((k,i)=>{
+          const c = row.getCell(i+1); c.value = r[k]==null?'':r[k];
+          const fillArgb = (opts.fill && opts.fill(ri,r)) || (ri%2 ? ZEBRA : 'FFFFFFFF');
+          c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:fillArgb}};
+          c.border = border; c.font = {size:10.5, name:'Calibri', bold: !!(opts.boldFirst && i===0)};
+          c.alignment = {vertical:'top', wrapText:true};
+        });
+      });
+      ws.autoFilter = {from:{row:3,column:1}, to:{row:3,column:n}};
+      return ws;
+    }
+    // 1. Trip info
+    addTable(XL.sheets[0], D.infoRows, {maxW:80, boldFirst:true});
+    // 2. Operational notes (from the Consolidated Sheet)
+    const notes = (rawData.notas||[]).map(x=>({[XL.cat]:x.category||'', [XL.item]:x.item||'', [XL.det]:x.detail||''}));
+    addTable(XL.sheets[1], notes, {maxW:90, boldFirst:true});
+    // 3. Passengers (those with special information are tinted light blue, like in the app)
+    addTable(XL.sheets[2], D.paxRows, {maxW:40, fill:(ri)=> hasSpecialInfo(paxData[ri]) ? SPECIAL : null});
+    // 4-5. Flights / buses
+    addTable(XL.sheets[3], D.flightRows, {});
+    addTable(XL.sheets[4], D.busRows, {});
+    // 6-7. Checklist (with front-cart / rear-cart columns)
+    [[XL.flowE, XL.sheets[5]], [XL.flowD, XL.sheets[6]]].forEach(([flow, sheetName])=>{
+      const stageIdx = {}; let sc = 0;
+      const rows = D.checklistRows.filter(r=>r[0]===flow).map(r=>{
+        if(stageIdx[r[1]]===undefined) stageIdx[r[1]] = sc++;
+        const two = r[5];
+        return {[XL.stage]:r[1], [XL.item]:r[2], [XL.ans]: two ? '' : r[3], [XL.front]: two?two.front:'', [XL.rear]: two?two.rear:'', [XL.cmt]:r[4], _s:stageIdx[r[1]]};
+      });
+      const ws = addTable(sheetName, rows.map(r=>{ const o = Object.assign({}, r); delete o._s; return o; }), {maxW:70, fill:(ri)=> (rows[ri] && rows[ri]._s%2) ? STAGEB : null});
+      ws.getColumn(4).width = 16; ws.getColumn(5).width = 16;
+    });
+    // 8. Incidents
+    addTable(XL.sheets[7], D.incRows, {maxW:70});
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = XL.fname + (sessionVoyage!=='—'?sessionVoyage:XL.op) + '.xlsx';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }catch(err){
+    console.error('Styled Excel failed, using the plain export:', err);
+    downloadExcelReportBasic();
+  }
 }
 </script>
 
