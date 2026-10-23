@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JM Passengers — Draft v3.26 (live data)</title>
+<title>JM Passengers — Draft v4.9 (live data)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
@@ -129,6 +129,18 @@
   .tag-early{background:#e3f6f1;color:#12795e;}
   .tag-preland{background:#fff1e0;color:#a85f0c;}
   .tag-postland{background:#ece9fb;color:#4b3fa8;}
+  .tag-transfer{background:#e6f4f6;color:var(--teal-dark);}
+  .arr-line{font-size:11.5px;color:var(--teal-dark);margin-top:3px;font-weight:600;}
+  .tin-date{font-size:12px;font-weight:800;color:var(--navy);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.03em;}
+  .tin-date:first-child{margin-top:0;}
+  .tag-noapp{background:#fdf1d9;color:var(--amber);}
+  .phone-sheet{background:#fff;border-radius:16px;max-width:340px;width:100%;padding:20px;text-align:center;}
+  .phone-sheet h3{margin:0 0 2px;color:var(--navy);font-size:15px;}
+  .phone-sheet .num{font-size:13px;color:var(--gray);margin-bottom:16px;}
+  .phone-opt{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;margin-bottom:8px;border-radius:11px;border:1.5px solid var(--border);background:#fff;font-size:14px;font-weight:700;color:var(--text);text-decoration:none;}
+  .phone-opt:hover{border-color:var(--teal);}
+  .phone-opt .ic{font-size:18px;width:24px;text-align:center;}
+  .phone-opt.wa{border-color:#bfe8cd;background:#effaf3;color:#128c4a;}
   .pax-card.pax-special{background:#eef8fd;border-color:#cfe6f3;}
   .pax-card.pax-special:hover{border-color:var(--teal);}
   .pax-bday-flag{width:20px;height:20px;border-radius:50%;background:#f5eafd;color:#7a3fa0;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -233,6 +245,11 @@
   .jm-name{font-weight:700;color:var(--navy);flex:1;min-width:0;word-wrap:break-word;}
   .jm-name.none{color:#9aa8b5;font-weight:400;font-style:italic;}
   .jm-src{font-size:10.5px;color:#6b7a8c;white-space:nowrap;}
+  .owner-bar{margin:0 0 14px;}
+  .owner-bar .dchip{font-size:12px;padding:7px 12px;margin:0 6px 6px 0;display:inline-block;}
+  .owner-banner{font-size:12.5px;padding:8px 12px;border-radius:9px;background:#eef8fd;border:1px solid #cfe6f3;color:#0f2d4e;margin-top:2px;line-height:1.5;}
+  .owner-banner.other{background:#fff6e5;border-color:#f0d9a8;color:#6b4a00;}
+  .owner-banner button{margin:6px 6px 0 0;}
   /* v3.26 — phone layout: tags wrap instead of overflowing, tables fit the screen, paired-time inputs */
   .pax-card>div:first-child{min-width:0;}
   .pax-tags{flex-wrap:wrap;justify-content:flex-end;min-width:0;max-width:100%;}
@@ -275,12 +292,12 @@
     <img class="login-logo-img" src="data:image/png;base64,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" alt="ILS Tours" />
     <div class="login-title-row">
       <div class="login-title">JM Passengers</div>
-      <span class="login-version-badge">draft v3.26</span>
+      <span class="login-version-badge">draft v4.9</span>
     </div>
     <div class="login-sub">Journey Manager · Live-data instructive</div>
     <div class="login-info-box">To operate you'll need to upload the operation's Consolidated Sheet (PASAJEROS / VUELOS / NOTAS OPERACION tabs) — it can be loaded after signing in.</div>
     <div class="login-error" id="loginError">Please fill in the operation ID and your name to continue.</div>
-    <input class="login-input login-input-id" id="op-id-input" type="text" placeholder="Operation ID (e.g. E4251202010)" />
+    <input class="login-input login-input-id" id="op-id-input" type="text" placeholder="Operation ID (e.g. E4251202010 or EV261020006-481)" />
 
     <div class="login-field-label">Your role</div>
     <div class="plane-chips" id="roleChips">
@@ -319,7 +336,7 @@
     <div class="topbar-row">
       <div class="topbar-title">
         <h1>JM Passengers</h1>
-        <span class="badge-draft">draft v3.26</span>
+        <span class="badge-draft">draft v4.9</span>
       </div>
       <div class="topbar-data" id="topbarMeta">
         <div class="topbar-col"><div class="lbl">Voyage</div><div class="val">—</div></div>
@@ -566,6 +583,19 @@
     </div>
 
     <div class="setup-card">
+      <div class="field-label" style="margin-top:0;">Arrivals with ILS transfer (Transfer In)</div>
+      <p class="hint" style="margin-top:0;">Passengers who arrive in Santiago with a transfer booked with us (from the Transfer Apt-Htl, Arrival Flight SCL, Arrival Date SCL and Arrival Time SCL columns). ON OWN passengers are not listed.</p>
+      <div class="day-chips" id="tinDayChips" style="margin-bottom:12px;">
+        <div class="dchip tin-chip active" data-tday="all" onclick="setTinDay('all')">All days</div>
+        <div class="dchip tin-chip" data-tday="-3" onclick="setTinDay('-3')">Day -3</div>
+        <div class="dchip tin-chip" data-tday="-2" onclick="setTinDay('-2')">Day -2</div>
+        <div class="dchip tin-chip" data-tday="-1" onclick="setTinDay('-1')">Day -1</div>
+        <div class="dchip tin-chip" data-tday="0" onclick="setTinDay('0')">Embarkation Day</div>
+      </div>
+      <div id="transferInBox"></div>
+    </div>
+
+    <div class="setup-card">
       <div class="field-label" style="margin-top:0;">Languages and Special Groups</div>
       <div class="field-label">Chinese translator?</div>
       <div class="plane-chips" id="chineseTranslatorChips" style="max-width:280px;">
@@ -594,9 +624,10 @@
       <div class="dchip active" data-day="emb">Embarkation Day</div>
     </div>
     <div class="warn-box" id="dayFilterBanner" style="display:none;"></div>
+    <div class="owner-banner" id="flightKeyBanner" style="display:none;margin-bottom:10px;"></div>
 
     <div class="search-row">
-      <input class="search-input" placeholder="Search by name, booking, or cabin…" id="paxSearch">
+      <input class="search-input" placeholder="Search by name, booking, cabin, seat, or phone…" id="paxSearch">
       <button class="btn btn-ghost btn-sm" id="addPaxBtn" style="white-space:nowrap;">+ Add passenger</button>
     </div>
     <div class="filter-chips" id="filterChips"></div>
@@ -622,6 +653,7 @@
   <!-- ============ SCREEN 3: CHECKLIST ============ -->
   <div class="screen" id="screen-checklist">
     <h2 class="section-title">Checklist</h2>
+    <div class="owner-bar" id="ownerBar"></div>
 
     <div class="field-label">Day to review</div>
     <div class="day-chips" id="dayChipsChecklist" style="margin-bottom:16px;">
@@ -681,6 +713,16 @@
     <p class="hint">Available at any point in the operation, not just at the end.</p>
 
     <div class="setup-card">
+      <h3 style="margin:0 0 4px;font-size:14px;color:var(--navy);">🧾 Checklist to download</h3>
+      <p class="hint" style="margin-top:0;">Each Journey Manager fills in their own checklist (one per plane). Choose which one goes into the Word, PDF and Excel reports below, or download all 3 separately.</p>
+      <select class="select-full" id="reportOwnerSel" onchange="reportOwner=parseInt(this.value,10)"></select>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn btn-ghost" onclick="downloadAllChecklists('word')">All 3 as Word (3 files)</button>
+        <button class="btn btn-ghost" onclick="downloadAllChecklists('excel')">All 3 as Excel (3 files)</button>
+      </div>
+    </div>
+
+    <div class="setup-card">
       <h3 style="margin:0 0 4px;font-size:14px;color:var(--navy);">📄 Word Report — Embarkation + Disembarkation</h3>
       <p class="hint" style="margin-top:0;">Passenger roster + assigned hotel/bus + incident log. Same format as your other ILS/Silversea reports.</p>
       <button class="btn" id="downloadWordBtn" onclick="downloadWordReport()">Download Word</button>
@@ -718,10 +760,12 @@
     <h3 id="modalName">Amy Parker</h3>
     <div class="pax-meta" id="modalMeta">Booking #A4471 · Suite 621</div>
     <div class="detail-row"><span>Flight</span><span id="modalFlight">DAP 820</span></div>
+    <div class="detail-row"><span>Charter seat</span><span id="modalSeat">—</span></div>
     <div class="detail-row"><span>Bus</span><span id="modalBus">—</span></div>
     <div class="detail-row"><span>Hotel (SCL)</span><span id="modalHotel">Mandarin Oriental</span></div>
+    <div class="detail-row"><span>Transfer In (SCL)</span><span id="modalTransferIn">—</span></div>
     <div class="field-label">Phone</div>
-    <input type="tel" class="select-full" id="modalPhone" placeholder="+56 9 …" style="margin-bottom:4px;">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;"><input type="tel" class="select-full" id="modalPhone" placeholder="+56 9 …" style="flex:1;"><button type="button" class="pax-phone-btn" id="modalPhoneBtn" title="Call / SMS / WhatsApp" style="font-size:16px;padding:6px 12px;" onclick="openPhoneMenu(currentPaxIndex, event)">📞</button></div>
     <div class="hint" id="modalPhoneNote" style="margin:0 0 10px;"></div>
     <div class="detail-row"><span>Program</span><span id="modalProgram">Antarctica Fly Cruise</span></div>
     <div class="detail-row"><span>Visa Check</span><span style="color:#1e8e5a">✓ OK</span></div>
@@ -738,6 +782,7 @@
       <label class="quick-flag"><input type="checkbox" id="flagPreLand"> 🧳 Pre land</label>
       <label class="quick-flag"><input type="checkbox" id="flagPostLand"> 🏨 Post land</label>
       <label class="quick-flag"><input type="checkbox" id="flagNoBp"> 🎫 No Boarding Pass</label>
+      <label class="quick-flag"><input type="checkbox" id="flagNoApp"> 📱 No Silversea App</label>
     </div>
 
     <div class="field-label">Passenger Status</div>
@@ -782,6 +827,19 @@
   </div>
 </div>
 
+<!-- ---- phone contact options (Call / SMS / WhatsApp) ---- -->
+<div class="overlay" id="phoneOverlay" style="z-index:60;" onclick="if(event.target.id==='phoneOverlay') closePhoneMenu()">
+  <div class="phone-sheet">
+    <h3 id="phoneSheetName">—</h3>
+    <div class="num" id="phoneSheetNum">—</div>
+    <a class="phone-opt" id="phoneOptCall" href="#" onclick="setTimeout(closePhoneMenu,300)"><span class="ic">📞</span>Call</a>
+    <a class="phone-opt" id="phoneOptSms" href="#" onclick="setTimeout(closePhoneMenu,300)"><span class="ic">💬</span>Send SMS</a>
+    <a class="phone-opt wa" id="phoneOptWa" href="#" target="_blank" rel="noopener" onclick="setTimeout(closePhoneMenu,300)"><span class="ic">🟢</span>WhatsApp</a>
+    <div class="pax-phone-note" id="phoneSheetNote" style="margin:-2px 0 8px;"></div>
+    <button class="btn btn-ghost btn-sm btn-block" style="margin-top:4px;" onclick="closePhoneMenu()">Cancel</button>
+  </div>
+</div>
+
 <script>
 /* ================= FIREBASE SYNC ================= */
 const firebaseConfig = {
@@ -821,7 +879,7 @@ function fbPath(operationId){
 }
 
 function gatherInfoViajeFields(){
-  const ids = ['infoCheckin','infoWaitingArea','infoDesayunoLugar','infoDesayunoHorario','infoBusLugarSalida','infoTraductorQuien','infoGruposEspeciales','infoNotasVip','cmtGeneralEmb','cmtGeneralDes'];
+  const ids = ['infoCheckin','infoWaitingArea','infoDesayunoLugar','infoDesayunoHorario','infoBusLugarSalida','infoTraductorQuien','infoGruposEspeciales','infoNotasVip'];
   const out = {};
   ids.forEach(id=>{ const el = document.getElementById(id); if(el) out[id] = el.value; });
   out.hotel1 = getSelectedName('hotel1');
@@ -841,7 +899,7 @@ function gatherInfoViajeFields(){
 }
 function applyInfoViajeFields(data){
   if(!data) return;
-  const ids = ['infoCheckin','infoWaitingArea','infoDesayunoLugar','infoDesayunoHorario','infoBusLugarSalida','infoTraductorQuien','infoGruposEspeciales','infoNotasVip','cmtGeneralEmb','cmtGeneralDes'];
+  const ids = ['infoCheckin','infoWaitingArea','infoDesayunoLugar','infoDesayunoHorario','infoBusLugarSalida','infoTraductorQuien','infoGruposEspeciales','infoNotasVip'];
   ids.forEach(id=>{ if(data[id]!==undefined){ const el = document.getElementById(id); if(el) el.value = data[id]; } });
   if(data.hotel1){ const sel=document.getElementById('hotel1-name-select'); const known=Array.from(sel.options).some(o=>o.value===data.hotel1); if(known){sel.value=data.hotel1; toggleCustomNameSilent('hotel1',data.hotel1);} else {sel.value='__other__'; toggleCustomNameSilent('hotel1','__other__'); document.getElementById('hotel1-name-input').value=data.hotel1;} }
   if(data.hotel2){ const sel=document.getElementById('hotel2-name-select'); const known=Array.from(sel.options).some(o=>o.value===data.hotel2); if(known){sel.value=data.hotel2; toggleCustomNameSilent('hotel2',data.hotel2);} else {sel.value='__other__'; toggleCustomNameSilent('hotel2','__other__'); document.getElementById('hotel2-name-input').value=data.hotel2;} }
@@ -884,7 +942,8 @@ function gatherFullState(){
   return {
     rawData: rawData,
     paxData: paxData,
-    checklistValues: checklistValues,
+    checklists: checklistStore,
+    _touched: Array.from(touchedOwners.size ? touchedOwners : [activeOwner]),
     infoViaje: gatherInfoViajeFields(),
     team: gatherTeamFields(),
     ship: { name: getSelectedName('ship')||'', dateISO: (document.getElementById('op-date-input')||{}).value||'', port: embarkPort(), itineraryDays: sessionItineraryDays||null },
@@ -912,6 +971,7 @@ function saveLocalBackup(){
 }
 
 function pushStateToFirebase(){
+  touchedOwners.add(activeOwner);
   syncDirty = true; dirtyVer++; scheduleSyncRetry();
   saveLocalBackup(); // siempre — así nada se pierde aunque no haya señal (ej. en vuelo)
   if(!sessionVoyage || sessionVoyage === '—') return;
@@ -950,15 +1010,32 @@ function startRestMode(operationId){
     }).catch(()=>{});
   }, 15000);
 }
+function buildCloudUpdate(state){
+  const cl = state.checklists || {};
+  const owners = (state._touched && state._touched.length) ? state._touched : [activeOwner];
+  const upd = Object.assign({}, state);
+  delete upd.checklists; delete upd._touched; delete upd.checklistValues;
+  owners.forEach(k=>{ const v = cl[k]; upd['checklists/'+k] = (v && Object.keys(v).length) ? v : null; });
+  if(legacyFlatPending) upd.checklistValues = null;
+  return JSON.parse(JSON.stringify(upd));
+}
+function restPatch(operationId, upd){
+  return fetch(restUrl(operationId), {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(upd)}).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); });
+}
 function cloudWrite(state){
+  const upd = buildCloudUpdate(state);
+  const wasLegacy = legacyFlatPending;
+  return cloudWriteRaw(state, upd).then(r=>{ if(wasLegacy) legacyFlatPending = false; return r; });
+}
+function cloudWriteRaw(state, upd){
   lastRemoteUpdatedAt = state.updatedAt || lastRemoteUpdatedAt;
   const id = sessionVoyage;
-  if(useRest || !operationRef) return restPut(id, state);
+  if(useRest || !operationRef) return restPatch(id, upd);
   suppressNextEcho = true;
-  const sdk = Promise.race([operationRef.set(state), new Promise((_,rej)=>setTimeout(()=>rej(Object.assign(new Error('timeout'),{code:'TIMEOUT'})),10000))]);
+  const sdk = Promise.race([operationRef.update(upd), new Promise((_,rej)=>setTimeout(()=>rej(Object.assign(new Error('timeout'),{code:'TIMEOUT'})),10000))]);
   return sdk.catch(err=>{
     suppressNextEcho = false;
-    return restPut(id, state).then(()=>{ startRestMode(id); });
+    return restPatch(id, upd).then(()=>{ startRestMode(id); });
   });
 }
 
@@ -1015,8 +1092,22 @@ function applyRemoteState(data){
   renderNotasOperacion();
   if(data.paxData && data.paxData.length){ paxData = data.paxData; usingSampleData = false; }
   updatePhonesChip();
-  if(data.checklistValues){ Object.assign(checklistValues, data.checklistValues); }
+  if(data.checklists){
+    Object.keys(data.checklists).forEach(k=>{ const n = parseInt(k,10); if(isNaN(n)) return; if(!checklistStore[n]) checklistStore[n] = {}; Object.assign(checklistStore[n], data.checklists[k] || {}); });
+  }
+  // data written before v3.27 (a single shared checklist) is kept as "Previous" so nothing is lost
+  let migrated = false;
+  if(data.checklistValues && Object.keys(data.checklistValues).length){
+    Object.keys(data.checklistValues).forEach(k=>{ if(checklistStore[0][k]===undefined){ checklistStore[0][k] = data.checklistValues[k]; } });
+    migrated = true;
+  }
+  if(data.infoViaje){
+    ['cmtGeneralEmb','cmtGeneralDes'].forEach(id=>{ if(data.infoViaje[id] && checklistStore[0][id]===undefined){ checklistStore[0][id] = data.infoViaje[id]; migrated = true; } });
+  }
+  if(migrated){ legacyFlatPending = true; touchedOwners.add(0); setTimeout(()=>pushStateToFirebase(), 1500); }
   applyInfoViajeFields(data.infoViaje);
+  loadGeneralComments(); renderOwnerBar();
+  if(!(document.activeElement && document.activeElement.closest && document.activeElement.closest('#screen-checklist'))) renderAll();
   if(data.ship && data.ship.port){ const pe=document.getElementById('emb-port-select'); if(pe) pe.value = data.ship.port==='PWI' ? 'PWI' : 'KGG'; onOperationDetailChange(); }
   applyTeamFields(data.team);
   if(data.ship && data.ship.name && !getSelectedName('ship')){
@@ -1140,7 +1231,7 @@ const STATUS_CLASS = { no_llego:"tag-status-red", no_embarco:"tag-status-red", v
 let currentPaxIndex = null;
 
 /* ================= EXCEL: READING AND MAPPING (same engine as Chequeo Bus Embarque) ================= */
-function normalize(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+function normalize(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim(); }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function formatCellTime(v){
   if(v === '' || v === undefined || v === null) return '';
@@ -1178,7 +1269,7 @@ function sheetToAoa(wb, sheetName){
   return XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
 }
 function findHeaderRowIndex(aoa, requiredHeaderName){
-  for(let i=0; i<Math.min(aoa.length,5); i++){
+  for(let i=0; i<Math.min(aoa.length,10); i++){
     const norm = (aoa[i]||[]).map(c=>normalize(c));
     if(norm.includes(normalize(requiredHeaderName))) return i;
   }
@@ -1209,8 +1300,15 @@ async function parseConsolidatedFile(file){
   const wb = XLSX.read(buf, {type:'array', cellDates:false});
 
   /* ---- PASAJEROS: the base tab — hosp + hotel + transfer are synthesized from it ---- */
-  const paxSheetName = findSheetByName(wb, ['PASAJEROS']);
-  if(!paxSheetName) throw new Error('Could not find the "PASAJEROS" tab in the file.');
+  // v4.6 — accepts the JM Pasajeros file (PASAJEROS tab) and the Master Completa (MASTER COMPLETA tab); otherwise, any tab whose header has Booking Code + First/Last Name
+  let paxSheetName = findSheetByName(wb, ['PASAJEROS','MASTER COMPLETA']);
+  if(!paxSheetName){
+    paxSheetName = wb.SheetNames.find(n=>{
+      const aoa = sheetToAoa(wb, n).slice(0,10).map(r=>(r||[]).map(c=>normalize(c)));
+      return aoa.some(r=> r.includes('booking code') && r.includes('first name') && r.includes('last name'));
+    }) || null;
+  }
+  if(!paxSheetName) throw new Error('Could not find the passengers tab in the file (expected "MASTER COMPLETA" or "PASAJEROS", with the columns Booking Code / First Name / Last Name).');
   const paxAoa = sheetToAoa(wb, paxSheetName);
   const paxHeaderIdx = findHeaderRowIndex(paxAoa, 'Booking Code');
   const paxHeaders = (paxAoa[paxHeaderIdx]||[]).map(h=>String(h||'').trim());
@@ -1236,6 +1334,13 @@ async function parseConsolidatedFile(file){
   const idxHotelScl = pc(['Hotel SCL']);
   const idxArrivalDate = pc(['Arrival Date SCL']);
   const idxArrivalTime = pc(['Arrival Time SCL']);
+  const idxTransferType = pc(['Transfer Apt-Htl','Transfer Apt Htl','Transfer']);
+  const idxArrFlight = pc(['Arrival Flight SCL','Arrival Flight']);
+  const idxFrom = pc(['From']);
+  const idxCheckIn = pc(['Check In SCL','Check-In SCL','Check In']);
+  const idxCharterDate = pc(['Date','Charter Date','Flight Date']);
+  const idxSeat = pc(['Charter Seat','Seat','Seats','Seat N°','Seat Number','Asiento']);
+  const idxPhone = pc(['Phone','Phone Number','Telephone','Mobile','Cell','Teléfono','Telefono','Celular']);
 
   const hospRows = [], hotelRows = [], transferRows = [];
   paxRows.forEach(r=>{
@@ -1244,11 +1349,11 @@ async function parseConsolidatedFile(file){
     const last = cellVal(r, idxLast);
     const notesText = [cellVal(r, idxVip), cellVal(r, idxSpecialRequest), cellVal(r, idxRemarks), cellVal(r, idxHotelComments), cellVal(r, idxTransferComments)]
       .filter(Boolean).join(' · ');
-    hospRows.push([booking, first, last, cellVal(r, idxCabin), cellVal(r, idxBus), cellVal(r, idxFlight), notesText, cellVal(r, idxPickup)]);
+    hospRows.push([booking, first, last, cellVal(r, idxCabin), cellVal(r, idxBus), cellVal(r, idxFlight), notesText, formatCellTime(cellRaw(r, idxPickup)), cellVal(r, idxPhone), cellVal(r, idxSeat), cellVal(r, idxTransferType), cellVal(r, idxArrFlight), cellVal(r, idxFrom), cellVal(r, idxCheckIn), cellVal(r, idxCharterDate)]);
     hotelRows.push([booking, first, last, cellVal(r, idxHotelScl)]);
-    transferRows.push([booking, first, last, cellVal(r, idxArrivalDate), cellVal(r, idxArrivalTime)]);
+    transferRows.push([booking, first, last, cellVal(r, idxArrivalDate), formatCellTime(cellRaw(r, idxArrivalTime))]);
   });
-  const hosp = {rows: hospRows, cols: {booking:0, firstName:1, lastName:2, cabin:3, busNumber:4, flightNumber:5, notes:6, pickup:7}};
+  const hosp = {rows: hospRows, cols: {booking:0, firstName:1, lastName:2, cabin:3, busNumber:4, flightNumber:5, notes:6, pickup:7, phone:8, seat:9, transferType:10, arrivalFlight:11, arrivalFrom:12, checkInScl:13, charterDate:14}};
   const hotel = {rows: hotelRows, cols: {booking:0, firstName:1, lastName:2, hotelName:3}};
   const transfer = {rows: transferRows, cols: {booking:0, firstName:1, lastName:2, arrivalDay:3, transferTime:4}};
 
@@ -1349,13 +1454,13 @@ document.getElementById('fileConsolidated').addEventListener('change', async (e)
     updateTopbar();
     rebuildPaxFromSources();
   }catch(err){
-    alert('Could not read the consolidated sheet. Check that it has the PASAJEROS, VUELOS and NOTAS OPERACION tabs in the expected format.\n\n'+err.message);
+    alert('Could not read the consolidated sheet. Upload the Master Completa (MASTER COMPLETA, VUELOS and NOTAS OPERACION tabs) or the JM Pasajeros file (PASAJEROS tab).\n\n'+err.message);
   }
 });
 
 
 /* ================= v3.26 — Cabin Phone Manifest: phone of each passenger ================= */
-function phoneTokens(s){ return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9 ]/g,' ').split(/\s+/).filter(Boolean); }
+function phoneTokens(s){ return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9 ]/g,' ').split(/\s+/).filter(Boolean); }
 function phoneTokMatch(a,b){ return a===b || (a.length>=3 && b.length>=3 && (a.indexOf(b)===0 || b.indexOf(a)===0)); }
 function matchPhoneFor(p){
   const list = (rawData.phones||[]).filter(x=> p.booking && p.booking!=='—' && normalize(x.b)===normalize(p.booking));
@@ -1376,8 +1481,8 @@ function applyPhonesToPax(){
   paxData.forEach(p=>{
     if(p.phoneManual){ if(p.phone) own++; else none++; return; }
     const m = matchPhoneFor(p);
-    p.phone = m ? m.phone : ''; p.phoneNote = m ? m.note : '';
-    if(!m) none++; else if(m.note) shared++; else own++;
+    p.phone = m ? m.phone : (p.sheetPhone||''); p.phoneNote = m ? m.note : '';
+    if(!p.phone) none++; else if(m && m.note) shared++; else own++;
   });
   return {own, shared, none};
 }
@@ -1387,9 +1492,29 @@ function phoneLineHtml(p){
   return '📞 <a href="tel:'+href+'">'+escapeHtml(p.phone)+'</a>' + (p.phoneNote ? ' <span class="pax-phone-note">('+escapeHtml(p.phoneNote)+')</span>' : '');
 }
 function togglePhone(i){
+  // v4.4 — with a phone: opens Call / SMS / WhatsApp; without one: shows "No phone registered"
+  const p = paxData[i];
+  if(p && p.phone){ openPhoneMenu(i); return; }
   const el = document.getElementById('pphone_'+i);
   if(el) el.style.display = (el.style.display==='none') ? 'block' : 'none';
 }
+function openPhoneMenu(i, ev){
+  if(ev){ ev.stopPropagation(); ev.preventDefault(); }
+  const p = paxData[i]; if(!p) return;
+  const raw = String(p.phone||'').trim();
+  if(!raw){ alert('This passenger has no phone registered. You can type it in the passenger\'s record.'); return; }
+  const dial = raw.replace(/[^0-9+]/g,'');
+  const waNum = dial.replace(/^\+/,'').replace(/^00/,'');
+  document.getElementById('phoneSheetName').textContent = p.name;
+  document.getElementById('phoneSheetNum').textContent = raw;
+  document.getElementById('phoneSheetNote').textContent = p.phoneNote ? '('+p.phoneNote+')' : '';
+  document.getElementById('phoneOptCall').href = 'tel:' + dial;
+  document.getElementById('phoneOptSms').href = 'sms:' + dial;
+  document.getElementById('phoneOptWa').href = 'https://wa.me/' + waNum;
+  document.getElementById('phoneOverlay').classList.add('active');
+}
+function closePhoneMenu(){ document.getElementById('phoneOverlay').classList.remove('active'); }
+function detectNoApp(t){ return /\bno\s*(?:silversea\s*)?app\b|without\s+(?:the\s+)?(?:silversea\s+)?app|sin\s+(?:la\s+)?app/i.test(t||''); }
 async function parsePhoneManifest(file){
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, {type:'array', cellDates:false});
@@ -1460,6 +1585,14 @@ function rebuildPaxFromSources(){
       bus: cellVal(r, cols.busNumber) || '—',
       flight: cellVal(r, cols.flightNumber) || '—',
       pickup: formatCellTime(cellRaw(r, cols.pickup)) || '',
+      sheetPhone: cellVal(r, cols.phone),
+      seat: cellVal(r, cols.seat),
+      transferType: cellVal(r, cols.transferType),
+      arrivalFlight: cellVal(r, cols.arrivalFlight),
+      arrivalFrom: cellVal(r, cols.arrivalFrom),
+      checkInScl: cellVal(r, cols.checkInScl),
+      charterDate: cellVal(r, cols.charterDate),
+      phone: cellVal(r, cols.phone),
       hotel: null,
       vip: /vip|venetian/i.test(notesText),
       venetian: /venetian/i.test(notesText),
@@ -1471,6 +1604,7 @@ function rebuildPaxFromSources(){
       earlyCheckin: detectEarlyCheckin(notesText),
       preLand: detectPreLand(notesText),
       postLand: detectPostLand(notesText),
+      noApp: detectNoApp(notesText),
       program: 'Fly Cruise',
       status: 'manifiesto',
       incidents: [],
@@ -1581,7 +1715,7 @@ function migrateReqFlags(){
 }
 function detectWheelchair(t){ return /\bwheel\s*-?\s*chair\b|\bWCH[RSC]\b|silla\s+de\s+ruedas/i.test(t||''); }
 function hasSpecialInfo(p){
-  return !!(p.vip || p.venetian || p.birthday || p.diet || (p.mealCodes && p.mealCodes.length) || p.wheelchair || p.noBp || p.earlyCheckin || p.preLand || p.postLand);
+  return !!(p.vip || p.venetian || p.birthday || p.diet || (p.mealCodes && p.mealCodes.length) || p.wheelchair || p.noBp || p.noApp || p.earlyCheckin || p.preLand || p.postLand);
 }
 function detectMealCodes(notesText){
   if(!notesText) return [];
@@ -1627,7 +1761,20 @@ function shiftISO(iso, days){
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0,10);
 }
+// v4.9 — the Santiago embarkation day is taken first from the charter date of the sheet (column "Date" of the Master Completa);
+// only if the sheet does not have it, it is calculated from the voyage date and the ship's embarkation port
+function charterDateFromSheet(){
+  const opYear = (document.getElementById('op-date-input').value||'').slice(0,4) || String(new Date().getFullYear());
+  const counts = {};
+  paxData.forEach(p=>{ const iso = p.charterDate ? parseFlexibleDateISO(p.charterDate, opYear) : null; if(iso) counts[iso] = (counts[iso]||0)+1; });
+  const keys = Object.keys(counts);
+  if(!keys.length) return null;
+  keys.sort((a,b)=>counts[b]-counts[a]);
+  return keys[0];
+}
 function santiagoEmbarkISO(){
+  const fromSheet = charterDateFromSheet();
+  if(fromSheet) return fromSheet;
   const base = document.getElementById('op-date-input').value;
   if(!base) return null;
   return shiftISO(base, embarkPort()==='KGG' ? -1 : 0);
@@ -1688,6 +1835,23 @@ function parseFlexibleDateISO(raw, fallbackYear){
   return null;
 }
 // ¿esta llegada corresponde al día elegido? admite fecha real o día relativo (-3/-2/-1) escrito en la planilla
+// v4.8 — arrival day of a passenger: Arrival Date SCL; if it is ON OWN / TBC / empty, the hotel Check In SCL date is used instead (so ON OWN passengers can be filtered by day too)
+function effectiveArrival(p, baseYear){
+  if(!baseYear){ const sc = santiagoEmbarkISO(); baseYear = sc ? sc.slice(0,4) : String(new Date().getFullYear()); }
+  const a = (p.arrivalDay===undefined||p.arrivalDay===null) ? '' : String(p.arrivalDay).trim();
+  if(a && (parseRelativeDay(a)!==null || parseFlexibleDateISO(a, baseYear))) return a;
+  const c = (p.checkInScl===undefined||p.checkInScl===null) ? '' : String(p.checkInScl).trim();
+  if(c && parseFlexibleDateISO(c, baseYear)) return c;
+  return a;
+}
+// relative day (-3/-2/-1/0) of a date, counted from the Santiago embarkation
+function relDayOf(raw, baseYear){
+  const rel = parseRelativeDay(raw); if(rel!==null) return rel;
+  const iso = parseFlexibleDateISO(raw, baseYear); const sc = santiagoEmbarkISO();
+  if(!iso || !sc) return null;
+  return Math.round((Date.parse(iso+'T00:00:00Z') - Date.parse(sc+'T00:00:00Z'))/86400000);
+}
+function relDayLabel(n){ if(n===null || n===undefined) return ''; return n===0 ? 'Embarkation Day' : ('Day ' + (n>0?'+':'') + n); }
 function arrivalMatchesDay(arrival, day, targetDate, baseYear){
   const rel = parseRelativeDay(arrival);
   if(rel !== null) return rel === dayOffsetMap(day);
@@ -1756,7 +1920,89 @@ function getPickupTimeForBus(busLabel){
   return match ? match.pickup : '';
 }
 
+/* ================= v4.7 — Transfer In: arrivals in Santiago with an ILS transfer ================= */
+function isOnOwn(v){ return /on\s*own/i.test(String(v||'')); }
+function hasTransferIn(p){
+  if(!p) return false;
+  if(isOnOwn(p.transferType) || isOnOwn(p.arrivalFlight)) return false;
+  return !!(String(p.transferType||'').trim() || String(p.arrivalFlight||'').trim());
+}
+function arrivalDateLabel(raw){
+  const v = String(raw==null?'':raw).trim();
+  if(!v) return '';
+  if(/tbc/i.test(v)) return 'TBC';
+  const baseYear = (document.getElementById('op-date-input').value||'').slice(0,4) || null;
+  const iso = parseFlexibleDateISO(v, baseYear);
+  if(!iso) return v;
+  const [y,m,d] = iso.split('-').map(Number);
+  const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(Date.UTC(y,m-1,d)).getUTCDay()];
+  return wd + ' ' + d + '-' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1];
+}
+function arrivalTimeLabel(p){ let t = String(p.transferTime||'').trim(); if(/^0?\.\d+$/.test(t)) t = formatCellTime(Number(t)); return /tbc/i.test(t) ? 'TBC' : t; }
+function transferInLine(p){
+  if(!hasTransferIn(p)) return '';
+  const rd = relDayOf(p.arrivalDay, (document.getElementById('op-date-input').value||'').slice(0,4) || null);
+  const parts = [p.arrivalFlight||'Flight TBC', (arrivalDateLabel(p.arrivalDay)||'date TBC') + (rd!==null ? ' ('+relDayLabel(rd)+')' : ''), arrivalTimeLabel(p)||'time TBC'];
+  return '🛬 Transfer In: ' + parts.map(escapeHtml).join(' · ') + (p.transferType ? ' <span style="font-weight:400;color:var(--gray);">('+escapeHtml(p.transferType)+')</span>' : '');
+}
+function transferInGroups(){
+  const baseYear = (document.getElementById('op-date-input').value||'').slice(0,4) || null;
+  const groups = {};
+  paxData.forEach(p=>{
+    if(!hasTransferIn(p)) return;
+    const iso = parseFlexibleDateISO(p.arrivalDay, baseYear) || '';
+    const flight = String(p.arrivalFlight||'').trim() || 'TBC';
+    const key = (iso||'zzzz') + '|' + arrivalTimeLabel(p) + '|' + flight;
+    if(!groups[key]) groups[key] = {iso, dateLabel: arrivalDateLabel(p.arrivalDay)||'TBC', time: arrivalTimeLabel(p)||'TBC', flight, from: new Set(), types: new Set(), pax: []};
+    const g = groups[key];
+    if(p.arrivalFrom) g.from.add(p.arrivalFrom);
+    if(p.transferType) g.types.add(p.transferType);
+    g.pax.push(p);
+  });
+  return Object.keys(groups).sort().map(k=>groups[k]);
+}
+let tinDay = 'all';
+function setTinDay(d){
+  tinDay = d;
+  document.querySelectorAll('#tinDayChips .tin-chip').forEach(c=>c.classList.toggle('active', c.dataset.tday===d));
+  renderTransferIn();
+}
+function renderTransferIn(){
+  const box = document.getElementById('transferInBox');
+  if(!box) return;
+  const baseYear = (document.getElementById('op-date-input').value||'').slice(0,4) || null;
+  const allGroups = transferInGroups();
+  allGroups.forEach(g=>{ g.rel = relDayOf(g.pax[0].arrivalDay, baseYear); });
+  const groups = tinDay==='all' ? allGroups : allGroups.filter(g=> g.rel===parseInt(tinDay,10));
+  document.querySelectorAll('#tinDayChips .tin-chip').forEach(c=>{
+    const d = c.dataset.tday; const n = (d==='all' ? allGroups : allGroups.filter(g=>g.rel===parseInt(d,10))).reduce((a,g)=>a+g.pax.length,0);
+    c.textContent = (d==='all' ? 'All days' : relDayLabel(parseInt(d,10))) + ' (' + n + ')';
+  });
+  if(allGroups.length && !groups.length){ box.innerHTML = '<p class="hint" style="margin:0;">No Transfer In arrivals on this day.</p>'; return; }
+  if(!groups.length){
+    box.innerHTML = '<p class="hint" style="margin:0;">' + (paxData.length ? 'No passenger has a Transfer In with ILS in the loaded sheet (or the sheet does not include the Transfer Apt-Htl / Arrival Flight SCL columns).' : 'Upload the Master Completa to see the arrivals with transfer here.') + '</p>';
+    return;
+  }
+  const total = groups.reduce((a,g)=>a+g.pax.length,0);
+  let html = '<p class="hint" style="margin:0 0 10px;"><b>'+total+'</b> passenger(s) with Transfer In · <b>'+groups.length+'</b> arrival(s)</p>';
+  let lastDate = null;
+  groups.forEach(g=>{
+    if(g.dateLabel!==lastDate){
+      if(lastDate!==null) html += '</tbody></table>';
+      html += '<div class="tin-date">'+escapeHtml(g.dateLabel)+(g.rel!==null && g.rel!==undefined ? ' · '+escapeHtml(relDayLabel(g.rel)) : '')+'</div><table class="log-table"><thead><tr><th style="width:16%;">Time</th><th style="width:20%;">Flight</th><th style="width:12%;">From</th><th style="width:8%;">Pax</th><th>Passengers · transfer</th></tr></thead><tbody>';
+      lastDate = g.dateLabel;
+    }
+    html += '<tr><td style="font-weight:700;">'+escapeHtml(g.time)+'</td><td style="font-weight:700;">'+escapeHtml(g.flight)+'</td><td>'+escapeHtml(Array.from(g.from).join(', '))+'</td><td>'+g.pax.length+'</td><td>'
+      + g.pax.map(p=>escapeHtml(p.name)).join(', ')
+      + (g.types.size ? '<br><span style="font-size:11px;color:var(--gray);">'+escapeHtml(Array.from(g.types).join(' / '))+'</span>' : '')
+      + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  box.innerHTML = html;
+}
+
 function renderInfoViajeTables(){
+  renderTransferIn();
   const flights = distinctFlights();
   const flightBody = document.getElementById('flightInfoBody');
   const flightEmpty = document.getElementById('flightInfoEmpty');
@@ -1805,6 +2051,8 @@ function renderFilterChips(){
   chips.push({label:`With requirements (${paxData.filter(hasSpecialInfo).length})`, active: currentFilter.type==='special', onclick:`setFilter('special')`});
   chips.push({label:'VIP / Venetian', active: currentFilter.type==='vip', onclick:`setFilter('vip')`});
   chips.push({label:'Special diets', active: currentFilter.type==='diet', onclick:`setFilter('diet')`});
+  chips.push({label:`Transfer In (${paxData.filter(hasTransferIn).length})`, active: currentFilter.type==='transferin', onclick:`setFilter('transferin')`});
+  chips.push({label:`No Silversea App (${paxData.filter(p=>p.noApp).length})`, active: currentFilter.type==='noapp', onclick:`setFilter('noapp')`});
   chips.push({label:'With updates / incidents', active: currentFilter.type==='incidents', onclick:`setFilter('incidents')`});
   document.getElementById('filterChips').innerHTML = chips.map(c=>
     `<div class="fchip ${c.active?'active':''}" onclick="${c.onclick}">${escapeHtml(c.label)}</div>`
@@ -1824,14 +2072,16 @@ function getFilteredPax(){
       if(currentFilter.type==='flight' && p.flight!==currentFilter.value) return false;
       if(currentFilter.type==='vip' && !p.vip) return false;
       if(currentFilter.type==='diet' && !p.diet) return false;
+      if(currentFilter.type==='noapp' && !p.noApp) return false;
+      if(currentFilter.type==='transferin' && !hasTransferIn(p)) return false;
       if(currentFilter.type==='special' && !hasSpecialInfo(p)) return false;
       if(currentFilter.type==='incidents' && !(p.incidents && p.incidents.length>0)) return false;
       if(selectedDay !== 'emb'){
-        if(!arrivalMatchesDay(p.arrivalDay, selectedDay, targetDate, baseYear)) return false;
+        if(!arrivalMatchesDay(effectiveArrival(p, baseYear), selectedDay, targetDate, baseYear)) return false;
       }
       if(currentSearch){
         const q = currentSearch;
-        const hay = (p.name+' '+p.booking+' '+p.cabin).toLowerCase();
+        const hay = (p.name+' '+p.booking+' '+p.cabin+' '+(p.phone||'')+' '+(p.seat||'')+' '+(p.arrivalFlight||'')).toLowerCase();
         if(!hay.includes(q)) return false;
       }
       return true;
@@ -1842,7 +2092,7 @@ function arrivalSummary(){
   const baseYear = (document.getElementById('op-date-input').value||'').slice(0,4) || null;
   const out = {rel:{}, dates:{}, unreadable:0, empty:0};
   paxData.forEach(p=>{
-    const raw = (p.arrivalDay===undefined||p.arrivalDay===null) ? '' : String(p.arrivalDay).trim();
+    const raw = effectiveArrival(p, baseYear);
     if(!raw){ out.empty++; return; }
     const rel = parseRelativeDay(raw);
     if(rel!==null){ out.rel[rel] = (out.rel[rel]||0)+1; return; }
@@ -1874,7 +2124,7 @@ function renderDayBanner(){
     html = `📅 Filtering by <b>${dayLabel}</b> — passengers marked <b>${dayLabel}</b> in the sheet: <b>${n}</b>.`;
   }
   if(!hasRel && !hasDates){
-    html += ' ' + (paxData.length ? `No passenger has an arrival date (Arrival Date SCL) on file.` : '');
+    html += ' ' + (paxData.length ? `No passenger has an arrival date (Arrival Date SCL or Check In SCL) on file.` : '');
   } else if(n===0){
     const parts = Object.keys(summ.dates).sort().map(k=>formatDateShort(k)+' ('+summ.dates[k]+')')
       .concat(Object.keys(summ.rel).sort().map(k=>'Día '.replace('Día ', 'Day ')+k+' ('+summ.rel[k]+')'));
@@ -1916,7 +2166,8 @@ function renderPax(){
         ${p.birthday ? `<div class="pax-bday-flag" title="Birthday${p.birthdayLabel?' '+p.birthdayLabel:''}">🕯️</div>` : ''}
         <div>
           <div class="pax-name">${p.name}</div>
-          <div class="pax-meta">${p.booking!=="—" ? "#"+p.booking+" · " : ""}Cabin ${p.cabin} · Bus ${cleanBusLabel(p.bus)} · Flight ${p.flight}</div>
+          <div class="pax-meta">${p.booking!=="—" ? "#"+p.booking+" · " : ""}Cabin ${p.cabin} · Bus ${cleanBusLabel(p.bus)} · Flight ${p.flight}${p.seat ? ' · <b>Seat '+escapeHtml(p.seat)+'</b>' : ''}</div>
+          ${hasTransferIn(p) ? `<div class="arr-line">${transferInLine(p)}</div>` : ''}
           <div class="pax-phone" id="pphone_${i}" style="display:none;" onclick="event.stopPropagation()">${phoneLineHtml(p)}</div>
         </div>
       </div>
@@ -1933,6 +2184,7 @@ function renderPax(){
         ${p.preLand ? '<span class="tag tag-preland">🧳 Pre land</span>' : ''}
         ${p.postLand ? '<span class="tag tag-postland">🏨 Post land</span>' : ''}
         ${p.noBp ? '<span class="tag tag-nobp">🎫 No BP</span>' : ''}
+        ${p.noApp ? '<span class="tag tag-noapp">📱 No App</span>' : ''}
       </div>
     </div>`;
   }).join('');
@@ -1947,6 +2199,8 @@ function openModal(i){
   document.getElementById('modalMeta').textContent = (p.booking!=="—" ? `Booking #${p.booking} · ` : '') + `Cabin ${p.cabin}`;
   document.getElementById('modalFlight').textContent = p.flight;
   document.getElementById('modalBus').textContent = cleanBusLabel(p.bus);
+  document.getElementById('modalSeat').textContent = p.seat || '—';
+  document.getElementById('modalTransferIn').innerHTML = hasTransferIn(p) ? transferInLine(p).replace('🛬 Transfer In: ','') : (isOnOwn(p.transferType)||isOnOwn(p.arrivalFlight) ? 'ON OWN' : '—');
   document.getElementById('modalHotel').textContent = p.hotel;
   document.getElementById('modalPhone').value = p.phone || '';
   document.getElementById('modalPhoneNote').textContent = p.phoneNote ? p.phoneNote : (p.phone ? '' : 'No phone registered: you can type it here.');
@@ -1974,6 +2228,7 @@ function openModal(i){
   document.getElementById('flagPreLand').checked = !!p.preLand;
   document.getElementById('flagPostLand').checked = !!p.postLand;
   document.getElementById('flagNoBp').checked = !!p.noBp;
+  document.getElementById('flagNoApp').checked = !!p.noApp;
   document.getElementById('incidentForm').style.display = 'none';
   document.getElementById('protocolBox').style.display = 'none';
   document.getElementById('noBpBox').style.display = 'none';
@@ -1988,6 +2243,7 @@ document.getElementById('flagEarly').addEventListener('change', (e)=>{ paxData[c
 document.getElementById('flagPreLand').addEventListener('change', (e)=>{ paxData[currentPaxIndex].preLand = e.target.checked; renderPax(); pushStateToFirebase(); });
 document.getElementById('flagPostLand').addEventListener('change', (e)=>{ paxData[currentPaxIndex].postLand = e.target.checked; renderPax(); pushStateToFirebase(); });
 document.getElementById('flagNoBp').addEventListener('change', (e)=>{ paxData[currentPaxIndex].noBp = e.target.checked; renderPax(); pushStateToFirebase(); });
+document.getElementById('flagNoApp').addEventListener('change', (e)=>{ paxData[currentPaxIndex].noApp = e.target.checked; renderPax(); pushStateToFirebase(); });
 document.getElementById('closeModal').onclick = ()=> document.getElementById('paxOverlay').classList.remove('active');
 document.getElementById('paxOverlay').onclick = (e)=>{ if(e.target.id==='paxOverlay') e.currentTarget.classList.remove('active'); };
 document.getElementById('modalPhone').addEventListener('input', (e)=>{
@@ -2035,7 +2291,7 @@ document.getElementById('savePaxBtn').addEventListener('click', ()=>{
   paxData.push({
     name, booking:"—", cabin:"—", bus:"—", flight, hotel:"(added manually)",
     vip: /\bvip\b/i.test(note), venetian: /venetian/i.test(note), wheelchair: detectWheelchair(note), noBp: false,
-    earlyCheckin: detectEarlyCheckin(note), preLand: detectPreLand(note), postLand: detectPostLand(note),
+    earlyCheckin: detectEarlyCheckin(note), preLand: detectPreLand(note), postLand: detectPostLand(note), noApp: detectNoApp(note),
     diet: mealCodes.length>0, mealCodes: mealCodes,
     birthday: !!bday, birthdayLabel: bday ? bday.label : '',
     program: "Fly Cruise", status: "agregado_mano",
@@ -2051,8 +2307,8 @@ document.getElementById('paxSearch').addEventListener('input', (e)=>{
 });
 
 // delegated listener: any change within "Trip Info" (fixed fields + dynamically generated bus/flight times) saves and syncs
-/* v3.26 — the general comments at the end of the checklist are now saved and synced */
-['cmtGeneralEmb','cmtGeneralDes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input', ()=> pushStateToFirebase()); });
+/* v3.27 — general comments belong to the checklist of each Journey Manager */
+['cmtGeneralEmb','cmtGeneralDes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input', ()=>{ checklistValues[id]=el.value; pushStateToFirebase(); }); });
 document.getElementById('screen-infoviaje').addEventListener('input', ()=> pushStateToFirebase());
 document.getElementById('screen-infoviaje').addEventListener('change', ()=> pushStateToFirebase());
 // delegated listener: Ship, Date, and JM1/JM2/JM3 names on the Cover tab (planes already sync from selectPlane)
@@ -2109,6 +2365,8 @@ function parseVoyageCode(code){
   return { ship, dateISO, itineraryDays: parseInt(days,10) };
 }
 let sessionVoyage = '—';
+let sessionFlightKey = '';      // v3.29 — "EV261020006-481": the voyage is EV261020006, 481 = the flight of this Journey Manager
+let suffixApplied = false;
 let sessionJm1 = '—';
 let sessionItineraryDays = null;
 const planeState = { staff:null, jm1:null, jm2:null, jm3:null };
@@ -2128,6 +2386,7 @@ function onOperationDetailChange(){
   const scISO = santiagoEmbarkISO();
   const portLabel = embarkPort()==='KGG' ? ' (KGG)' : ' (PWI)';
   const scLabel = scISO ? (' · Santiago: ' + formatDateLong(scISO)) : '';
+  if(typeof renderTransferIn==='function') renderTransferIn();
   document.getElementById('lookupDate').textContent = dateVal ? ('Embarkation: ' + formatDateLong(dateVal) + portLabel + scLabel + itineraryLabel) : 'Date not set — select it above';
   updateTopbar();
 }
@@ -2207,13 +2466,16 @@ function checkPlaneDuplicates(){
 }
 
 function login(){
-  const code = document.getElementById('op-id-input').value.trim().toUpperCase();
+  const rawCode = document.getElementById('op-id-input').value.trim().toUpperCase();
+  const mk = rawCode.match(/^(.*[^\s\-_])\s*[-_]\s*(\d{2,4})$/);   // voyage + flight suffix
+  const code = mk ? mk[1] : rawCode;
+  sessionFlightKey = mk ? mk[2] : ''; suffixApplied = false;
   const name = getSelectedName('staff');
   const errBox = document.getElementById('loginError');
-  if(!code || !sessionRole || !name || (sessionRole==='jm' && !planeState.staff)){
+  if(!code || !sessionRole || !name || (sessionRole==='jm' && !planeState.staff && !sessionFlightKey)){
     errBox.textContent = !sessionRole
       ? 'Select your role (Executive or Journey Manager) to continue.'
-      : (sessionRole==='jm' && !planeState.staff)
+      : (sessionRole==='jm' && !planeState.staff && !sessionFlightKey)
         ? 'As a Journey Manager, select your assigned plane to continue.'
         : 'Fill in the operation ID and your name to continue.';
     errBox.style.display = 'block';
@@ -2236,13 +2498,14 @@ function login(){
     sessionItineraryDays = null;
   }
   onOperationDetailChange();
-  document.getElementById('summaryVoyage').textContent = code;
+  document.getElementById('summaryVoyage').textContent = code + (sessionFlightKey ? ' · flight ' + sessionFlightKey : '');
   const roleTag = sessionRole==='ejecutivo' ? ' (Executive)' : (planeState.staff ? ' (Plane '+planeState.staff+')' : '');
   document.getElementById('summaryJm1').textContent = name + roleTag;
 
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   updateTopbar();
+  setActiveOwner(defaultOwner(), false);
   connectToOperation(code);
 }
 
@@ -2304,7 +2567,30 @@ function getJmTeam(){
   }
   return team;
 }
+function tryApplyFlightKey(){
+  if(!sessionFlightKey || suffixApplied) return;
+  const flights = distinctFlights();
+  if(!flights.length) return;                    // passenger data has not arrived yet
+  suffixApplied = true;
+  const banner = document.getElementById('flightKeyBanner');
+  const re = new RegExp('(^|\\D)' + sessionFlightKey + '(\\D|$)');
+  const f = flights.find(x=>re.test(String(x)));
+  if(!f){
+    if(banner){ banner.className='owner-banner other'; banner.style.display='block'; banner.textContent='Flight ' + sessionFlightKey + ' was not found in this voyage. Available flights: ' + flights.join(', '); }
+    return;
+  }
+  const team = getJmTeam();
+  const t = team.find(x=>x.flight===f);
+  let plane = t ? t.plane : (flights.indexOf(f)+1);
+  if(plane<1 || plane>3) plane = null;
+  if(sessionRole==='jm' && plane){ planeState.staff = plane; document.getElementById('summaryJm1').textContent = sessionJm1 + ' (Plane ' + plane + ')'; }
+  if(plane) setActiveOwner(plane);
+  setFilter('flight', f);
+  if(banner){ banner.className='owner-banner'; banner.style.display='block';
+    banner.innerHTML = '✈ <b>' + escapeHtml(f) + '</b>' + (plane ? ' · Plane ' + plane : '') + ' · ' + paxData.filter(p=>p.flight===f).length + ' passengers'; }
+}
 function renderJmTeam(){
+  if(sessionFlightKey && !suffixApplied) tryApplyFlightKey();
   const team = getJmTeam();
   const strip = document.getElementById('jmTeamStrip');
   if(strip) strip.innerHTML = team.map(t=>
@@ -2314,6 +2600,7 @@ function renderJmTeam(){
     '<div class="jm-row'+(t.you?' you':'')+'"><span class="jm-plane">Plane '+t.plane+'</span>'
     + '<span class="jm-name'+(t.name?'':' none')+'">'+(t.name?escapeHtml(t.name):'not assigned')+(t.you?' <span class="jm-src">(you)</span>':'')+'</span>'
     + '<span class="jm-src">'+(t.flight?escapeHtml(t.flight)+' · ':'')+(t.src==='sheet'?'from sheet':(t.src==='entered'?'entered':''))+'</span></div>').join('');
+  if(typeof renderOwnerBar==='function') renderOwnerBar();
 }
 
 function updateTopbar(){
@@ -2346,15 +2633,15 @@ const dayContent = {
 };
 function chooseDay(day){
   selectedDay = day;
-  document.querySelectorAll('.dchip').forEach(c=>c.classList.toggle('active', c.dataset.day===day));
+  document.querySelectorAll('.dchip[data-day]').forEach(c=>c.classList.toggle('active', c.dataset.day===day));
   const panel = document.getElementById('dayPanel');
   if(panel) panel.innerHTML = dayContent[day];
   renderPax();
 }
-document.querySelectorAll('.dchip').forEach(chip=>{
+document.querySelectorAll('.dchip[data-day]').forEach(chip=>{
   chip.addEventListener('click', ()=> chooseDay(chip.dataset.day));
 });
-document.querySelector('.dchip.active').click();
+document.querySelector('.dchip[data-day].active').click();
 
 /* ================= CHECKLIST DATA ================= */
 const FLIGHT_FIELDS = [
@@ -2523,7 +2810,83 @@ const stagesDes = [
 ];
 
 let currentFlow = 'emb';
-const checklistValues = {};
+/* v3.27 — one checklist per Journey Manager (plane). 0 = checklist from before v3.27 (not assigned) */
+let checklistStore = {0:{}, 1:{}, 2:{}, 3:{}};
+let activeOwner = 1;
+let checklistValues = checklistStore[1];   // always points to the checklist being edited
+let reportOwner = null;                    // checklist included in the reports (null = the one being edited)
+let touchedOwners = new Set();
+let legacyFlatPending = false;
+function ownerLabel(n){
+  if(n===-1) return 'All Journey Managers';
+  if(n===0) return 'Previous (not assigned)';
+  const t = getJmTeam()[n-1];
+  return 'Plane ' + n + (t && t.name ? ' · ' + t.name : '');
+}
+function resolvedReportOwner(){ return reportOwner!==null ? reportOwner : -1; }
+function ownerFileSuffix(){
+  const n = resolvedReportOwner();
+  const t = n>=1 ? getJmTeam()[n-1] : null;
+  if(n===-1) return '_AllJM';
+  return '_' + (n===0 ? 'previous' : 'Plane'+n) + (t && t.name ? '_' + t.name.replace(/[^A-Za-z0-9]+/g,'') : '');
+}
+function ownerTitleSuffix(){ return ' — ' + ownerLabel(resolvedReportOwner()); }
+function ownerHasData(n){ return Object.keys(checklistStore[n]||{}).some(k=>checklistStore[n][k]!=='' && checklistStore[n][k]!==false); }
+function defaultOwner(){ return (sessionRole==='jm' && planeState.staff) ? planeState.staff : 1; }
+function loadGeneralComments(){
+  ['cmtGeneralEmb','cmtGeneralDes'].forEach(id=>{ const el = document.getElementById(id); if(el) el.value = checklistValues[id] || ''; });
+}
+function setActiveOwner(n, rerender){
+  activeOwner = n;
+  if(!checklistStore[n]) checklistStore[n] = {};
+  checklistValues = checklistStore[n];
+  loadGeneralComments();
+  renderOwnerBar();
+  if(rerender !== false) renderAll();
+}
+function moveLegacyTo(n){
+  const src = checklistStore[0], dst = checklistStore[n];
+  Object.keys(src).forEach(k=>{ if(dst[k]===undefined || dst[k]==='') dst[k] = src[k]; });
+  checklistStore[0] = {};
+  touchedOwners.add(0); touchedOwners.add(n);
+  setActiveOwner(n);
+  pushStateToFirebase();
+}
+function renderOwnerBar(){
+  const bar = document.getElementById('ownerBar');
+  const team = getJmTeam();
+  const chips = [1,2,3].map(n=>'<div class="dchip'+(activeOwner===n?' active':'')+'" onclick="setActiveOwner('+n+')">✈ '+escapeHtml(ownerLabel(n))+(ownerHasData(n)?' ●':'')+'</div>');
+  if(ownerHasData(0) || activeOwner===0) chips.push('<div class="dchip'+(activeOwner===0?' active':'')+'" onclick="setActiveOwner(0)">Previous (not assigned) ●</div>');
+  let banner = '';
+  const mine = (sessionRole==='jm' && planeState.staff===activeOwner);
+  if(activeOwner===0){
+    banner = '<div class="owner-banner other">These are answers saved before there was one checklist per Journey Manager. Move them to the right checklist:<br>' + [1,2,3].map(n=>'<button type="button" class="btn btn-ghost btn-sm" onclick="moveLegacyTo('+n+')">Move to Plane '+n+'</button>').join('') + '</div>';
+  } else if(mine){
+    banner = '<div class="owner-banner">You are filling in your checklist: <b>'+escapeHtml(ownerLabel(activeOwner))+'</b></div>';
+  } else if(sessionRole==='jm'){
+    banner = '<div class="owner-banner other">You are viewing the checklist of <b>'+escapeHtml(ownerLabel(activeOwner))+'</b>. What you write here is saved in that checklist, not in yours.</div>';
+  } else {
+    banner = '<div class="owner-banner">Viewing the checklist of: <b>'+escapeHtml(ownerLabel(activeOwner))+'</b></div>';
+  }
+  if(bar) bar.innerHTML = '<div class="field-label" style="margin-top:0;">Checklist of</div>' + chips.join('') + banner;
+  const sel = document.getElementById('reportOwnerSel');
+  if(sel){
+    const cur = resolvedReportOwner();
+    const opts = [-1,1,2,3].concat(ownerHasData(0)?[0]:[]);
+    sel.innerHTML = opts.map(n=>'<option value="'+n+'"'+(n===cur?' selected':'')+'>'+escapeHtml(ownerLabel(n))+(n!==-1 && !ownerHasData(n)?'':'')+(n>=0 && !ownerHasData(n)?' (empty)':'')+'</option>').join('');
+  }
+}
+async function downloadAllChecklists(kind){
+  const prev = reportOwner;
+  try{
+    for(const n of [1,2,3]){
+      reportOwner = n;
+      if(kind==='word') await downloadWordReport(); else await downloadExcelReport();
+      await new Promise(r=>setTimeout(r, 900));
+    }
+  } finally { reportOwner = prev; }
+}
+
 
 /* stable key of a field: its explicit id if it has one, otherwise its position (keeps answers saved before v3.26 valid) */
 function fieldKey(f, idx){ return (f && f.id!==undefined) ? f.id : idx; }
@@ -2565,7 +2928,19 @@ function fieldSavedText(stage, idx, f){
 }
 
 /* Walks through all 11 stages (embarkation + disembarkation) and builds a list of {stage, item, answer, comment} with only what the JM actually filled in */
-function collectChecklistReportRows(){
+function collectChecklistReportRows(owner){
+  const o = (owner===undefined || owner===null) ? resolvedReportOwner() : owner;
+  if(o===-1){
+    let all = [];
+    [1,2,3,0].forEach(n=>{ if(n===0 && !ownerHasData(0)) return;
+      collectChecklistReportRows(n).forEach(r=>{ const c = r.slice(); c[1] = ownerLabel(n) + ' · ' + c[1]; all.push(c); }); });
+    return all;
+  }
+  const prevCv = checklistValues;
+  checklistValues = checklistStore[o] || {};
+  try{ return collectChecklistRowsFor(); } finally { checklistValues = prevCv; }
+}
+function collectChecklistRowsFor(){
   const rows = [];
   [['Embarkation', stagesEmb, 'cmtGeneralEmb'], ['Disembarkation', stagesDes, 'cmtGeneralDes']].forEach(([flowLabel, stages, generalId])=>{
     stages.forEach(stage=>{
@@ -2578,7 +2953,7 @@ function collectChecklistReportRows(){
         else rows.push([flowLabel, stage.title, f.label, answer||'—', cmt]);
       });
     });
-    const general = fval(generalId);
+    const general = String(checklistValues[generalId]||'').trim();
     if(general) rows.push([flowLabel, 'General', 'General trip comments', '—', general]);
   });
   return rows;
@@ -3006,10 +3381,10 @@ function buildFullReportHtml(){
   const flightsHtml = wordSectionTitle("Flights") + wordTableHtml(["Flight","Departure time","Flight time","N° pax"], flightRows);
 
   const paxRows = paxData.map(p=>[
-    p.name, p.booking, p.cabin, cleanBusLabel(p.bus), p.flight, p.hotel||"", STATUS_LABELS[p.status]||"On manifest",
-    p.vip?"Yes":"No", p.venetian?"Yes":"No", p.birthday?("Yes"+(p.birthdayLabel?" ("+p.birthdayLabel+")":"")):"No", p.wheelchair?"Yes":"No", p.noBp?"Yes":"No", p.earlyCheckin?"Yes":"No", p.preLand?"Yes":"No", p.postLand?"Yes":"No", (p.mealCodes&&p.mealCodes.length)?p.mealCodes.join(', '):"", p._notes||""
+    p.name, p.booking, p.cabin, cleanBusLabel(p.bus), p.flight, p.seat||"", p.hotel||"", STATUS_LABELS[p.status]||"On manifest",
+    p.vip?"Yes":"No", p.venetian?"Yes":"No", p.birthday?("Yes"+(p.birthdayLabel?" ("+p.birthdayLabel+")":"")):"No", p.wheelchair?"Yes":"No", p.noBp?"Yes":"No", p.noApp?"Yes":"No", p.earlyCheckin?"Yes":"No", p.preLand?"Yes":"No", p.postLand?"Yes":"No", (p.mealCodes&&p.mealCodes.length)?p.mealCodes.join(', '):"", p._notes||""
   ]);
-  const paxHtml = wordSectionTitle("Passengers") + wordTableHtml(["Name","Booking","Cabin","Bus","Flight","Hotel","Status","VIP","Venetian","Birthday","Wheelchair","No BP","Early check-in","Pre land","Post land","Special meal","Notes"], paxRows);
+  const paxHtml = wordSectionTitle("Passengers") + wordTableHtml(["Name","Booking","Cabin","Bus","Flight","Seat","Hotel","Status","VIP","Venetian","Birthday","Wheelchair","No BP","No App","Early check-in","Pre land","Post land","Special meal","Notes"], paxRows);
 
   let incidentsHtml = wordSectionTitle("Incident and Complaint Log");
   const allIncidents = [];
@@ -3024,12 +3399,13 @@ function buildFullReportHtml(){
   const checklistEmb = checklistRows.filter(r=>r[0]==='Embarkation').map(r=>r.slice(1));
   const checklistDes = checklistRows.filter(r=>r[0]==='Disembarkation').map(r=>r.slice(1));
   const checklistHtml =
-    wordSectionTitle("Embarkation Checklist — Logged Answers") +
+    wordSectionTitle("Embarkation Checklist — Logged Answers" + ownerTitleSuffix()) +
     wordTableHtml(["Stage","Item","Answer","Comment"], checklistEmb) +
-    wordSectionTitle("Disembarkation Checklist — Logged Answers") +
+    wordSectionTitle("Disembarkation Checklist — Logged Answers" + ownerTitleSuffix()) +
     wordTableHtml(["Stage","Item","Answer","Comment"], checklistDes);
 
-  return head + resumenHtml + infoViajeHtml + busesHtml + flightsHtml + paxHtml + checklistHtml + incidentsHtml;
+  const tinHtml = wordSectionTitle("Transfer In (arrivals in Santiago with ILS)") + wordTableHtml(["Date","Time","Flight","From","Pax","Passengers"], transferInGroups().map(g=>[g.dateLabel,g.time,g.flight,Array.from(g.from).join(', '),g.pax.length,g.pax.map(p=>p.name).join(', ')]));
+  return head + resumenHtml + infoViajeHtml + busesHtml + flightsHtml + tinHtml + paxHtml + checklistHtml + incidentsHtml;
 }
 
 function downloadPdfReport(){
@@ -3126,10 +3502,10 @@ async function downloadWordReport(){
   const flightsNodes = [ docxSectionTitle("Flights"), docxTable(["Flight","Departure time","Flight time","N° pax"], flightRows) ];
 
   const paxRows = paxData.map(p=>[
-    p.name, p.booking, p.cabin, cleanBusLabel(p.bus), p.flight, p.hotel||"", STATUS_LABELS[p.status]||"On manifest",
-    p.vip?"Yes":"No", p.venetian?"Yes":"No", p.birthday?("Yes"+(p.birthdayLabel?" ("+p.birthdayLabel+")":"")):"No", p.wheelchair?"Yes":"No", p.noBp?"Yes":"No", p.earlyCheckin?"Yes":"No", p.preLand?"Yes":"No", p.postLand?"Yes":"No", (p.mealCodes&&p.mealCodes.length)?p.mealCodes.join(', '):"", p._notes||""
+    p.name, p.booking, p.cabin, cleanBusLabel(p.bus), p.flight, p.seat||"", p.hotel||"", STATUS_LABELS[p.status]||"On manifest",
+    p.vip?"Yes":"No", p.venetian?"Yes":"No", p.birthday?("Yes"+(p.birthdayLabel?" ("+p.birthdayLabel+")":"")):"No", p.wheelchair?"Yes":"No", p.noBp?"Yes":"No", p.noApp?"Yes":"No", p.earlyCheckin?"Yes":"No", p.preLand?"Yes":"No", p.postLand?"Yes":"No", (p.mealCodes&&p.mealCodes.length)?p.mealCodes.join(', '):"", p._notes||""
   ]);
-  const paxNodes = [ docxSectionTitle("Passengers"), docxTable(["Name","Booking","Cabin","Bus","Flight","Hotel","Status","VIP","Venetian","Birthday","Wheelchair","No BP","Early check-in","Pre land","Post land","Special meal","Notes"], paxRows) ];
+  const paxNodes = [ docxSectionTitle("Passengers"), docxTable(["Name","Booking","Cabin","Bus","Flight","Seat","Hotel","Status","VIP","Venetian","Birthday","Wheelchair","No BP","No App","Early check-in","Pre land","Post land","Special meal","Notes"], paxRows) ];
 
   let allIncidents = [];
   paxData.forEach(p=> (p.incidents||[]).forEach(inc=> allIncidents.push({paxName:p.name, inc})));
@@ -3144,22 +3520,22 @@ async function downloadWordReport(){
   const checklistEmb = checklistRows.filter(r=>r[0]==='Embarkation').map(r=>r.slice(1));
   const checklistDes = checklistRows.filter(r=>r[0]==='Disembarkation').map(r=>r.slice(1));
   const checklistNodes = [
-    docxSectionTitle("Embarkation Checklist — Logged Answers"),
+    docxSectionTitle("Embarkation Checklist — Logged Answers" + ownerTitleSuffix()),
     docxTable(["Stage","Item","Answer","Comment"], checklistEmb),
-    docxSectionTitle("Disembarkation Checklist — Logged Answers"),
+    docxSectionTitle("Disembarkation Checklist — Logged Answers" + ownerTitleSuffix()),
     docxTable(["Stage","Item","Answer","Comment"], checklistDes),
   ];
 
   const doc = new docx.Document({
     sections: [{
       properties: { page: { margin: { top: 600, bottom: 600, left: 600, right: 600 } } },
-      children: [ ...headerNodes, ...resumenNodes, ...infoViajeNodes, ...busesNodes, ...flightsNodes, ...paxNodes, ...checklistNodes, ...incidentNodes ],
+      children: [ ...headerNodes, ...resumenNodes, ...infoViajeNodes, ...busesNodes, ...flightsNodes, docxSectionTitle("Transfer In (arrivals in Santiago with ILS)"), docxTable(["Date","Time","Flight","From","Pax","Passengers"], transferInGroups().map(g=>[g.dateLabel,g.time,g.flight,Array.from(g.from).join(', '),g.pax.length,g.pax.map(p=>p.name).join(', ')])), ...paxNodes, ...checklistNodes, ...incidentNodes ],
     }],
   });
   const blob = await docx.Packer.toBlob(doc);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "JM_Report_" + (sessionVoyage!=="—"?sessionVoyage:"operation") + ".docx";
+  a.download = "JM_Report_" + (sessionVoyage!=="—"?sessionVoyage:"operation") + ownerFileSuffix() + ".docx";
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
@@ -3168,10 +3544,10 @@ async function downloadWordReport(){
 function excelData(){
   const paxRows = paxData.map(p=>({
     "Name": p.name, "Booking": p.booking, "Phone": p.phone||"", "Cabin": p.cabin, "Bus": cleanBusLabel(p.bus),
-    "Flight": p.flight, "Hotel": p.hotel||"", "Program": p.program, "Status": STATUS_LABELS[p.status]||"On manifest",
-    "VIP": p.vip?"Yes":"No", "Venetian": p.venetian?"Yes":"No", "Birthday": p.birthday?"Yes":"No", "Birthday date": p.birthdayLabel||"", "Wheelchair": p.wheelchair?"Yes":"No", "Early check-in": p.earlyCheckin?"Yes":"No", "Pre land": p.preLand?"Yes":"No", "Post land": p.postLand?"Yes":"No", "No BP": p.noBp?"Yes":"No", "Special diet": p.diet?"Yes":"No",
+    "Flight": p.flight, "Seat": p.seat||"", "Hotel": p.hotel||"", "Program": p.program, "Status": STATUS_LABELS[p.status]||"On manifest",
+    "VIP": p.vip?"Yes":"No", "Venetian": p.venetian?"Yes":"No", "Birthday": p.birthday?"Yes":"No", "Birthday date": p.birthdayLabel||"", "Wheelchair": p.wheelchair?"Yes":"No", "Early check-in": p.earlyCheckin?"Yes":"No", "Pre land": p.preLand?"Yes":"No", "Post land": p.postLand?"Yes":"No", "No BP": p.noBp?"Yes":"No", "No Silversea App": p.noApp?"Yes":"No", "Special diet": p.diet?"Yes":"No",
     "Special meal": (p.mealCodes&&p.mealCodes.length)?p.mealCodes.join(', '):"", "Notes": p._notes||"",
-    "Arrival date (Transfer)": p.arrivalDay||"", "Transfer time (Transfer)": p.transferTime||"",
+    "Transfer In": hasTransferIn(p)?(p.transferType||"Yes"):((isOnOwn(p.transferType)||isOnOwn(p.arrivalFlight))?"ON OWN":""), "Arrival flight SCL": p.arrivalFlight||"", "Arrival date SCL": arrivalDateLabel(p.arrivalDay), "Arrival time SCL": arrivalTimeLabel(p), "From": p.arrivalFrom||"",
   }));
 
   const incRows = [];
@@ -3220,10 +3596,10 @@ function excelData(){
 function downloadExcelReportBasic(){
   const paxRows = paxData.map(p=>({
     "Name": p.name, "Booking": p.booking, "Phone": p.phone||"", "Cabin": p.cabin, "Bus": cleanBusLabel(p.bus),
-    "Flight": p.flight, "Hotel": p.hotel||"", "Program": p.program, "Status": STATUS_LABELS[p.status]||"On manifest",
-    "VIP": p.vip?"Yes":"No", "Venetian": p.venetian?"Yes":"No", "Birthday": p.birthday?"Yes":"No", "Birthday date": p.birthdayLabel||"", "Wheelchair": p.wheelchair?"Yes":"No", "Early check-in": p.earlyCheckin?"Yes":"No", "Pre land": p.preLand?"Yes":"No", "Post land": p.postLand?"Yes":"No", "No BP": p.noBp?"Yes":"No", "Special diet": p.diet?"Yes":"No",
+    "Flight": p.flight, "Seat": p.seat||"", "Hotel": p.hotel||"", "Program": p.program, "Status": STATUS_LABELS[p.status]||"On manifest",
+    "VIP": p.vip?"Yes":"No", "Venetian": p.venetian?"Yes":"No", "Birthday": p.birthday?"Yes":"No", "Birthday date": p.birthdayLabel||"", "Wheelchair": p.wheelchair?"Yes":"No", "Early check-in": p.earlyCheckin?"Yes":"No", "Pre land": p.preLand?"Yes":"No", "Post land": p.postLand?"Yes":"No", "No BP": p.noBp?"Yes":"No", "No Silversea App": p.noApp?"Yes":"No", "Special diet": p.diet?"Yes":"No",
     "Special meal": (p.mealCodes&&p.mealCodes.length)?p.mealCodes.join(', '):"", "Notes": p._notes||"",
-    "Arrival date (Transfer)": p.arrivalDay||"", "Transfer time (Transfer)": p.transferTime||"",
+    "Transfer In": hasTransferIn(p)?(p.transferType||"Yes"):((isOnOwn(p.transferType)||isOnOwn(p.arrivalFlight))?"ON OWN":""), "Arrival flight SCL": p.arrivalFlight||"", "Arrival date SCL": arrivalDateLabel(p.arrivalDay), "Arrival time SCL": arrivalTimeLabel(p), "From": p.arrivalFrom||"",
   }));
   const wsPax = XLSX.utils.json_to_sheet(paxRows);
 
@@ -3284,7 +3660,7 @@ function downloadExcelReportBasic(){
   XLSX.utils.book_append_sheet(wb, wsChecklistEmb, "Embarkation Checklist");
   XLSX.utils.book_append_sheet(wb, wsChecklistDes, "Disembarkation Checklist");
   XLSX.utils.book_append_sheet(wb, wsInc, "Incidents");
-  XLSX.writeFile(wb, "Consolidated_Data_" + (sessionVoyage!=="—"?sessionVoyage:"operation") + ".xlsx");
+  XLSX.writeFile(wb, "Consolidated_Data_" + (sessionVoyage!=="—"?sessionVoyage:"operation") + ownerFileSuffix() + ".xlsx");
 }
 
 /* ================= v3.26 — styled Excel (ExcelJS); falls back to the plain SheetJS export if the library did not load ================= */
@@ -3307,7 +3683,7 @@ async function downloadExcelReport(){
       if(!rows.length) rows = [{[XL.empty]:''}];
       const n = keys.length;
       ws.mergeCells(1,1,1,Math.max(n,2));
-      const t = ws.getCell(1,1); t.value = name + (voyage?(' — '+voyage):'');
+      const t = ws.getCell(1,1); t.value = name + (voyage?(' — '+voyage):'') + (opts.titleExtra||'');
       t.font = {bold:true, size:14, color:{argb:'FFFFFFFF'}, name:'Calibri'};
       t.fill = {type:'pattern', pattern:'solid', fgColor:{argb:NAVY}};
       t.alignment = {vertical:'middle', horizontal:'left', indent:1};
@@ -3350,6 +3726,7 @@ async function downloadExcelReport(){
     // 4-5. Flights / buses
     addTable(XL.sheets[3], D.flightRows, {});
     addTable(XL.sheets[4], D.busRows, {});
+    addTable('Transfer In', transferInGroups().map(g=>({"Date": g.dateLabel, "Time": g.time, "Flight": g.flight, "From": Array.from(g.from).join(', '), "Pax": g.pax.length, "Transfer": Array.from(g.types).join(' / '), "Passengers": g.pax.map(p=>p.name).join(', ')})), {maxW:70});
     // 6-7. Checklist (with front-cart / rear-cart columns)
     [[XL.flowE, XL.sheets[5]], [XL.flowD, XL.sheets[6]]].forEach(([flow, sheetName])=>{
       const stageIdx = {}; let sc = 0;
@@ -3358,7 +3735,7 @@ async function downloadExcelReport(){
         const two = r[5];
         return {[XL.stage]:r[1], [XL.item]:r[2], [XL.ans]: two ? '' : r[3], [XL.front]: two?two.front:'', [XL.rear]: two?two.rear:'', [XL.cmt]:r[4], _s:stageIdx[r[1]]};
       });
-      const ws = addTable(sheetName, rows.map(r=>{ const o = Object.assign({}, r); delete o._s; return o; }), {maxW:70, fill:(ri)=> (rows[ri] && rows[ri]._s%2) ? STAGEB : null});
+      const ws = addTable(sheetName, rows.map(r=>{ const o = Object.assign({}, r); delete o._s; return o; }), {maxW:70, titleExtra: ownerTitleSuffix(), fill:(ri)=> (rows[ri] && rows[ri]._s%2) ? STAGEB : null});
       ws.getColumn(4).width = 16; ws.getColumn(5).width = 16;
     });
     // 8. Incidents
@@ -3368,7 +3745,7 @@ async function downloadExcelReport(){
     const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = XL.fname + (sessionVoyage!=='—'?sessionVoyage:XL.op) + '.xlsx';
+    a.download = XL.fname + (sessionVoyage!=='—'?sessionVoyage:XL.op) + ownerFileSuffix() + '.xlsx';
     document.body.appendChild(a); a.click();
     setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
   }catch(err){
