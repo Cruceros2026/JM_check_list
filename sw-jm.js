@@ -1,6 +1,8 @@
 /* JM Passengers — service worker: keeps the app (page + libraries) on the tablet so it opens with no signal (in flight).
-   It does NOT touch the Firebase database traffic: data is synced by the app itself. */
-const CACHE = 'jm-pasajeros-v5';
+   It does NOT touch the Firebase database traffic: data is synced by the app itself.
+   v6 — the page is always asked to the server WITHOUT the browser's HTTP cache (GitHub Pages keeps it ~10 min),
+   so a new version uploaded to GitHub reaches the tablets on the next open with signal. */
+const CACHE = 'jm-pasajeros-v6';
 const CDN_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'www.gstatic.com'];
 
 self.addEventListener('install', ()=>{ self.skipWaiting(); });
@@ -31,11 +33,12 @@ self.addEventListener('fetch', (e)=>{
   if(!isCacheable(url)) return;
   const isPage = req.mode === 'navigate' || (url.origin === self.location.origin && /\.html?$/i.test(url.pathname));
   if(isPage){
-    // network first (to get updates), the saved copy if there is no signal
+    // network first, skipping the HTTP cache (to always get the latest version); the saved copy if there is no signal
+    const key = url.origin + url.pathname;
     e.respondWith(Promise.race([
-      fetch(req).then(r=>{ if(r && r.ok){ const cp = r.clone(); caches.open(CACHE).then(c=>c.put(req, cp)); } return r; }),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), 5000))
-    ]).catch(()=> caches.match(req, {ignoreSearch:true}).then(m=> m || caches.match(url.origin+url.pathname))));
+      fetch(key, {cache:'no-store', credentials:'same-origin'}).then(r=>{ if(r && r.ok){ const cp = r.clone(); caches.open(CACHE).then(c=>c.put(key, cp)); } return r; }),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), 6000))
+    ]).catch(()=> caches.match(key).then(m=> m || caches.match(req, {ignoreSearch:true}))));
     return;
   }
   // libraries: saved copy first, network otherwise
